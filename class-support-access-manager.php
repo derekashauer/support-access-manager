@@ -2,39 +2,39 @@
 if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 	class Support_Access_Manager {
+		private static $instance = null;
 		private $menu_slug;
 		private $menu_label;
 		private $parent_slug;
+		private $textdomain;
 		private $default_settings;
 
 		/**
-		 * Constructor for Support Access Manager
+		 * Get the singleton instance of Support_Access_Manager.
 		 *
-		 * @param array $args {
-		 *     Optional. Array of settings for configuring the support access manager.
-		 *
-		 *     @type string $menu_slug    Slug for the admin menu page. Default 'support-access'.
-		 *     @type string $menu_label   Label for the admin menu item. Default 'Support Access'.
-		 *     @type string $parent_slug  Parent menu slug. Default 'users.php'.
-		 *     @type array  $defaults {
-		 *         Optional. Default values for the user creation form.
-		 *
-		 *         @type int    $duration      Default duration value. Default 1.
-		 *         @type string $duration_unit Default duration unit (hours|days|weeks|months). Default 'weeks'.
-		 *         @type int    $timeout       Default timeout in hours. Default empty.
-		 *         @type int    $usage_limit   Default usage limit. Default empty (unlimited).
-		 *         @type string $role          Default user role. Default 'administrator'.
-		 *         @type string $locale        Default user locale. Default empty (site default).
-		 *     }
-		 * }
+		 * @param array $args Optional. Configuration arguments for the instance.
+		 *                    Only used when creating a new instance.
+		 * @return Support_Access_Manager
 		 */
-		public function __construct( $args = array() ) {
+		public static function get_instance( $args = array() ) {
+			if ( null === self::$instance ) {
+				self::$instance = new self( $args );
+			}
+			return self::$instance;
+		}
+
+		/**
+		 * Protected constructor to prevent creating a new instance of the
+		 * Singleton via the `new` operator from outside of this class.
+		 */
+		protected function __construct( $args = array() ) {
 			$args = wp_parse_args(
 				$args,
 				array(
 					'menu_slug'   => 'support-access',
 					'menu_label'  => 'Support Access',
 					'parent_slug' => 'users.php',
+					'textdomain'  => 'support-access',
 					'defaults'    => array(),
 				)
 			);
@@ -42,6 +42,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			$this->menu_slug   = $args['menu_slug'];
 			$this->menu_label  = $args['menu_label'];
 			$this->parent_slug = $args['parent_slug'];
+			$this->textdomain  = $args['textdomain'];
 
 			// Set default settings with fallbacks
 			$this->default_settings = wp_parse_args(
@@ -76,6 +77,18 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 			// Handle deletion of temporary admins
 			add_action( 'admin_post_delete_temp_admin', array( $this, 'handle_temp_admin_deletion' ) );
+		}
+
+		/**
+		 * Prevent cloning of the instance
+		 */
+		protected function __clone() {}
+
+		/**
+		 * Prevent unserializing of the instance
+		 */
+		public function __wakeup() {
+			throw new \Exception( 'Cannot unserialize singleton' );
 		}
 
 		// Schedule the cron job when the plugin is activated
@@ -134,7 +147,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 		public function support_access_page() {
 			?>
 			<div class="wrap">
-				<h1><?php esc_html_e( 'Support Access', 'support-access' ); ?></h1>
+				<h1><?php esc_html_e( 'Support Access', $this->textdomain ); ?></h1>
 				<?php
 				// Check for transient message
 				$message = get_transient( 'support_access_message_' . get_current_user_id() );
@@ -155,7 +168,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 							<tr>
 								<th scope="row">
-									<label for="access_duration"><?php esc_html_e( 'Access Duration:', 'support-access' ); ?></label>
+									<label for="access_duration"><?php esc_html_e( 'Access Duration:', $this->textdomain ); ?></label>
 								</th>
 								<td>
 									<input type="number" 
@@ -167,27 +180,27 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 										   required>
 									<select name="access_duration_unit" id="access_duration_unit">
 										<option value="hours" <?php selected( $this->default_settings['duration_unit'], 'hours' ); ?>>
-											<?php esc_html_e( 'Hours', 'support-access' ); ?>
+											<?php esc_html_e( 'Hours', $this->textdomain ); ?>
 										</option>
 										<option value="days" <?php selected( $this->default_settings['duration_unit'], 'days' ); ?>>
-											<?php esc_html_e( 'Days', 'support-access' ); ?>
+											<?php esc_html_e( 'Days', $this->textdomain ); ?>
 										</option>
 										<option value="weeks" <?php selected( $this->default_settings['duration_unit'], 'weeks' ); ?>>
-											<?php esc_html_e( 'Weeks', 'support-access' ); ?>
+											<?php esc_html_e( 'Weeks', $this->textdomain ); ?>
 										</option>
 										<option value="months" <?php selected( $this->default_settings['duration_unit'], 'months' ); ?>>
-											<?php esc_html_e( 'Months', 'support-access' ); ?>
+											<?php esc_html_e( 'Months', $this->textdomain ); ?>
 										</option>
 									</select>
 									<p class="description">
-										<?php esc_html_e( 'How long the temporary user account will exist before being automatically deleted.', 'support-access' ); ?>
+										<?php esc_html_e( 'How long the temporary user account will exist before being automatically deleted.', $this->textdomain ); ?>
 									</p>
 								</td>
 							</tr>
 
 							<tr>
 								<th scope="row">
-									<label for="access_timeout"><?php esc_html_e( 'Login Link Timeout:', 'support-access' ); ?></label>
+									<label for="access_timeout"><?php esc_html_e( 'Login Link Timeout:', $this->textdomain ); ?></label>
 								</th>
 								<td>
 									<input type="number" 
@@ -197,14 +210,14 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 										   min="1" 
 										   class="small-text">
 									<p class="description">
-										<?php esc_html_e( 'Number of hours the login link remains valid after generation. Leave empty for no timeout (link works until account expires).', 'support-access' ); ?>
+										<?php esc_html_e( 'Number of hours the login link remains valid after generation. Leave empty for no timeout (link works until account expires).', $this->textdomain ); ?>
 									</p>
 								</td>
 							</tr>
 
 							<tr>
 								<th scope="row">
-									<label for="access_limit"><?php esc_html_e( 'Usage Limit:', 'support-access' ); ?></label>
+									<label for="access_limit"><?php esc_html_e( 'Usage Limit:', $this->textdomain ); ?></label>
 								</th>
 								<td>
 									<input type="number" 
@@ -214,14 +227,14 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 										   min="0" 
 										   class="small-text">
 									<p class="description">
-										<?php esc_html_e( 'Maximum number of times the login link can be used. Enter 0 or leave empty for unlimited uses.', 'support-access' ); ?>
+										<?php esc_html_e( 'Maximum number of times the login link can be used. Enter 0 or leave empty for unlimited uses.', $this->textdomain ); ?>
 									</p>
 								</td>
 							</tr>
 
 							<tr>
 								<th scope="row">
-									<label for="user_role"><?php esc_html_e( 'User Role:', 'support-access' ); ?></label>
+									<label for="user_role"><?php esc_html_e( 'User Role:', $this->textdomain ); ?></label>
 								</th>
 								<td>
 									<select name="user_role" id="user_role">
@@ -238,14 +251,14 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 										?>
 									</select>
 									<p class="description">
-										<?php esc_html_e( 'The WordPress role assigned to the temporary user. Choose the minimum role needed for the support task.', 'support-access' ); ?>
+										<?php esc_html_e( 'The WordPress role assigned to the temporary user. Choose the minimum role needed for the support task.', $this->textdomain ); ?>
 									</p>
 								</td>
 							</tr>
 
 							<tr>
 								<th scope="row">
-									<label for="user_locale"><?php esc_html_e( 'User Language:', 'support-access' ); ?></label>
+									<label for="user_locale"><?php esc_html_e( 'User Language:', $this->textdomain ); ?></label>
 								</th>
 								<td>
 									<?php
@@ -254,7 +267,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 									$languages    = array(
 										'' => sprintf(
 											/* translators: %s: Current site language name */
-											__( 'Site Default - %s', 'support-access' ),
+											__( 'Site Default - %s', $this->textdomain ),
 											$translations[ get_locale() ]['native_name'] ?? 'English (United States)'
 										),
 									);
@@ -287,7 +300,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 										?>
 									</select>
 									<p class="description">
-										<?php esc_html_e( 'The WordPress admin interface language for this temporary user. Choose "Site Default" to use the site\'s language setting.', 'support-access' ); ?>
+										<?php esc_html_e( 'The WordPress admin interface language for this temporary user. Choose "Site Default" to use the site\'s language setting.', $this->textdomain ); ?>
 									</p>
 								</td>
 							</tr>
@@ -295,7 +308,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						</tbody>
 					</table>
 
-					<?php submit_button( __( 'Create Temporary User', 'support-access' ) ); ?>
+					<?php submit_button( __( 'Create Temporary User', $this->textdomain ) ); ?>
 				</form>
 
 				<?php $this->list_temp_admins(); ?>
@@ -447,7 +460,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				'support_access_message_' . get_current_user_id(),
 				array(
 					'type'    => 'success',
-					'message' => __( 'Support access user created successfully.', 'support-access' ),
+					'message' => __( 'Support access user created successfully.', $this->textdomain ),
 				),
 				30 // Expire after 30 seconds
 			);
@@ -562,17 +575,17 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 			$user_query = new WP_User_Query( $args );
 			if ( ! empty( $user_query->results ) ) {
-				echo '<h2>' . esc_html__( 'Temporary Users', 'support-access' ) . '</h2>';
+				echo '<h2>' . esc_html__( 'Temporary Users', $this->textdomain ) . '</h2>';
 				echo '<table class="wp-list-table widefat fixed striped users">';
 				echo '<thead>';
 				echo '<tr>';
-				echo '<th>' . esc_html__( 'Username', 'support-access' ) . '</th>';
-				echo '<th>' . esc_html__( 'Role', 'support-access' ) . '</th>';
-				echo '<th>' . esc_html__( 'Login Count', 'support-access' ) . '</th>';
-				echo '<th>' . esc_html__( 'Expiration Date', 'support-access' ) . '</th>';
-				echo '<th>' . esc_html__( 'Login Link Timeout', 'support-access' ) . '</th>';
-				echo '<th>' . esc_html__( 'Access URL', 'support-access' ) . '</th>';
-				echo '<th>' . esc_html__( 'Actions', 'support-access' ) . '</th>';
+				echo '<th>' . esc_html__( 'Username', $this->textdomain ) . '</th>';
+				echo '<th>' . esc_html__( 'Role', $this->textdomain ) . '</th>';
+				echo '<th>' . esc_html__( 'Login Count', $this->textdomain ) . '</th>';
+				echo '<th>' . esc_html__( 'Expiration Date', $this->textdomain ) . '</th>';
+				echo '<th>' . esc_html__( 'Login Link Timeout', $this->textdomain ) . '</th>';
+				echo '<th>' . esc_html__( 'Access URL', $this->textdomain ) . '</th>';
+				echo '<th>' . esc_html__( 'Actions', $this->textdomain ) . '</th>';
 				echo '</tr>';
 				echo '</thead>';
 				echo '<tbody>';
@@ -612,8 +625,8 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 							?>
 							<span class="action-icon" onclick="copyToClipboard('<?php echo esc_js( $temp_user_url ); ?>')">
 							<span class="dashicons dashicons-clipboard" 
-								  title="<?php esc_attr_e( 'Copy URL', 'support-access' ); ?>">
-							</span> <?php _e( 'Copy URL', 'support-access' ); ?>
+								  title="<?php esc_attr_e( 'Copy URL', $this->textdomain ); ?>">
+							</span> <?php _e( 'Copy URL', $this->textdomain ); ?>
 				</span>
 						</td>
 						<td>
@@ -623,8 +636,8 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 								<input type="hidden" name="delete_temp_admin_id" value="<?php echo esc_attr( $user->ID ); ?>">
 								<button type="submit" class="action-icon delete" style="border: none; background: none; padding: 0;">
 									<span class="dashicons dashicons-trash" 
-										  title="<?php esc_attr_e( 'Delete User', 'support-access' ); ?>">
-									</span> <?php esc_html_e( 'Delete', 'support-access' ); ?>
+										  title="<?php esc_attr_e( 'Delete User', $this->textdomain ); ?>">
+									</span> <?php esc_html_e( 'Delete', $this->textdomain ); ?>
 								</button>
 							</form>
 						</td>
@@ -648,7 +661,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						'support_access_message_' . get_current_user_id(),
 						array(
 							'type'    => 'success',
-							'message' => __( 'Support access user deleted successfully.', 'support-access' ),
+							'message' => __( 'Support access user deleted successfully.', $this->textdomain ),
 						),
 						30
 					);

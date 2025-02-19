@@ -71,7 +71,7 @@ This project is licensed under the **GPL-3.0**.
 
 ## Contributing
 
-If you’d like to contribute, fork the repository and submit a pull request. Issues and feature requests are welcome.
+If you'd like to contribute, fork the repository and submit a pull request. Issues and feature requests are welcome.
 
 ---
 
@@ -81,3 +81,147 @@ If you’d like to contribute, fork the repository and submit a pull request. Is
 [GitHub](https://github.com/derekashauer)
 
 My Plugins: [Conversion Bridge](https://conversionbridgewp.com) | [WP Sunshine](https://www.wpsunshine.com) | [Sunshine Photo Cart](https://www.sunshinephotocart.com)
+
+### Configuration Options
+
+#### Menu Settings
+
+- `menu_slug` (string) - The URL slug for the admin page
+  - Default: 'support-access'
+  - Example: 'temp-users'
+
+- `menu_label` (string) - The text shown in the admin menu
+  - Default: 'Support Access'
+  - Example: 'Temporary Users'
+
+- `parent_slug` (string) - Where to place the menu item
+  - Default: 'users.php' (Users menu)
+  - Common values: 'tools.php', 'options-general.php', 'settings.php'
+
+- `textdomain` (string) - Text domain for translations
+  - Default: 'support-access'
+  - Example: 'my-plugin'
+  - Use your plugin's textdomain to provide your own translations
+
+#### Form Defaults
+
+The `defaults` array allows you to set default values for all form fields:
+
+- `duration` (int) - Default number for duration
+  - Default: 1
+  - Example: 2
+
+- `duration_unit` (string) - Default time unit
+  - Default: 'weeks'
+  - Options: 'hours', 'days', 'weeks', 'months'
+
+- `timeout` (int|string) - Default link timeout in hours
+  - Default: '' (empty string)
+  - Example: 24 (link expires after 24 hours)
+  - Set to empty string for no timeout
+
+- `usage_limit` (int|string) - Default usage limit
+  - Default: '' (empty string)
+  - Example: 3 (link can be used 3 times)
+  - Set to 0 or empty string for unlimited uses
+
+- `role` (string) - Default WordPress role
+  - Default: 'administrator'
+  - Options: Any valid WordPress role ('editor', 'author', etc.)
+
+- `locale` (string) - Default language
+  - Default: '' (site default)
+  - Example: 'es_ES' (Spanish)
+  - Use WordPress locale codes
+
+### Example Configurations
+
+#### Basic Support Setup
+
+```php
+// Get the instance with default settings
+Support_Access_Manager::get_instance();
+
+// Or get the instance with custom settings
+Support_Access_Manager::get_instance( array(
+    'menu_label' => 'Support Users',
+    'defaults'   => array(
+        'duration'      => 2,
+        'duration_unit' => 'days',
+        'timeout'       => 24,
+        'role'          => 'editor',
+    ),
+) );
+```
+
+#### Contractor Access
+
+```php
+new Support_Access_Manager( array(
+    'menu_label' => 'Contractor Access',
+    'defaults'   => array(
+        'duration'      => 1,
+        'duration_unit' => 'months',
+        'usage_limit'   => 0,
+        'role'          => 'author',
+    ),
+) );
+```
+
+#### International Support Team
+
+```php
+new Support_Access_Manager( array(
+    'defaults' => array(
+        'duration'      => 1,
+        'duration_unit' => 'weeks',
+        'timeout'       => 48,
+        'usage_limit'   => 5,
+        'role'          => 'editor',
+        'locale'        => 'es_ES',
+    ),
+) );
+```
+
+#### Example with Custom Text Domain
+
+```php
+new Support_Access_Manager( array(
+    'menu_label' => 'Support Users',
+    'textdomain' => 'my-plugin',
+    'defaults'   => array(
+        'duration'      => 2,
+        'duration_unit' => 'days',
+        'role'          => 'editor',
+    ),
+) );
+```
+
+Then in your plugin's translation files, you can include translations for all the strings used by Support Access Manager.
+
+## Notes
+
+- All default values can be overridden when creating individual temporary users
+- The menu will only be visible to users with the 'manage_options' capability
+- Temporary users are automatically deleted when they expire
+- Access URLs can be configured to expire independently of the user account
+
+### Basic Usage
+
+```php
+// Get the instance with default settings
+Support_Access_Manager::get_instance();
+
+// Or get the instance with custom settings
+Support_Access_Manager::get_instance( array(
+    'menu_label' => 'Support Users',
+    'defaults'   => array(
+        'duration'      => 2,
+        'duration_unit' => 'days',
+        'timeout'       => 24,
+        'role'          => 'editor',
+    ),
+) );
+```
+
+Note: Configuration options only take effect the first time the instance is created. Subsequent calls to `get_instance()` will return the existing instance with its original configuration.
