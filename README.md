@@ -2,9 +2,7 @@
 
 Support Access Manager is a lightweight PHP class for WordPress that allows temporary admin accounts to be created with expiration and access limits. It can be easily dropped into any project or installed via Composer.
 
-## Installation
-
-### 1. Install via Composer (Recommended)
+## Install via Composer (Recommended)
 To include Support Access Manager in your WordPress plugin or theme, add it as a dependency:
 
 ```sh
@@ -28,23 +26,24 @@ Then run:
 composer update
 ```
 
-### 2. Manually Include the Class
-If you prefer not to use Composer, simply download `Support_Access_Manager.php` and include it in your project:
+### Usage
+
+Once installed be sure to include the autoload file:
+
+```php
+require_once ABSPATH . 'vendor/autoload.php';
+```
+
+## Manually Include the Class
+If you prefer not to use Composer, simply download `class-support-access-manager.php` and include it in your project:
 
 ```php
 require_once 'path/to/class-support-access-manager.php';
-new Support_Access_Manager();
 ```
+
+Initiation already happens within the class file and checks that it has not already been included by another plugin.
 
 ---
-
-## Usage
-
-Once installed, initialize the class in your plugin:
-
-```php
-require_once ABSPATH . 'vendor/autoload.php'; // If using Composer
-```
 
 This will:
 - Add a **Support Access** menu under **Users** in the WordPress admin.
