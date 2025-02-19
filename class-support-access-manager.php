@@ -16,7 +16,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 		 *                    Only used when creating a new instance.
 		 * @return Support_Access_Manager
 		 */
-		public static function get_instance( $args = array() ) {
+		public static function instance( $args = array() ) {
 			if ( null === self::$instance ) {
 				self::$instance = new self( $args );
 			}

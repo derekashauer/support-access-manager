@@ -20,4 +20,4 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 }
 
 // Get or create the instance with default settings
-Support_Access_Manager::get_instance();
+Support_Access_Manager::instance();
