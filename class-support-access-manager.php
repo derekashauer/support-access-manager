@@ -500,16 +500,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			$token_hash   = hash( 'sha256', $access_token );
 			update_user_meta( $user_id, 'support_access_token_hash', $token_hash );
 
-			// Also store encrypted token for URL generation
-			$encrypted = openssl_encrypt(
-				$access_token,
-				'aes-256-cbc',
-				wp_salt( 'auth' ),
-				0,
-				substr( wp_salt( 'secure_auth' ), 0, 16 )
-			);
-			update_user_meta( $user_id, 'support_access_token_encrypted', $encrypted );
-
 			return array(
 				'user_id'      => $user_id,
 				'access_token' => $access_token,
@@ -623,7 +613,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						$user->roles
 					);
 
-					$access_url = $this->get_access_url( $user->ID );
 					?>
 					<tr>
 						<td><a href="<?php echo esc_url( $user_profile_url ); ?>"><?php echo esc_html( $user->user_login ); ?></a></td>
@@ -631,7 +620,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						<td><?php echo esc_html( $login_info ); ?></td>
 						<td><?php echo esc_html( $expiration_date ); ?></td>
 						<td>
-							<?php if ( $access_url ) : ?>
 								<a href="
 								<?php
 								echo esc_url(
@@ -648,11 +636,10 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 									)
 								);
 								?>
-								" class="button button-secondary">
+								">
 									<span class="dashicons dashicons-admin-links" style="vertical-align: text-top;"></span>
 									<?php esc_html_e( 'Generate New URL', $this->textdomain ); ?>
 								</a>
-							<?php endif; ?>
 						</td>
 						<td>
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
@@ -698,37 +685,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 					exit;
 				}
 			}
-		}
-
-		/**
-		 * Get the access URL for a user.
-		 *
-		 * @param int $user_id The user ID.
-		 * @return string|false The access URL or false if not found.
-		 */
-		private function get_access_url( $user_id ) {
-			// Get stored token.
-			$access_token = get_user_meta( $user_id, 'support_access_token_encrypted', true );
-			if ( empty( $access_token ) ) {
-				return false;
-			}
-
-			// Decrypt the token
-			$decrypted = openssl_decrypt(
-				$access_token,
-				'aes-256-cbc',
-				wp_salt( 'auth' ),
-				0,
-				substr( wp_salt( 'secure_auth' ), 0, 16 )
-			);
-
-			// Return URL with decrypted token.
-			return add_query_arg(
-				array(
-					'support_access' => $user_id . '|' . $decrypted,
-				),
-				home_url()
-			);
 		}
 
 		/**
