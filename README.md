@@ -32,7 +32,7 @@ composer update
 If you prefer not to use Composer, simply download `Support_Access_Manager.php` and include it in your project:
 
 ```php
-require_once 'path/to/Support_Access_Manager.php';
+require_once 'path/to/class-support-access-manager.php';
 new Support_Access_Manager();
 ```
 
@@ -44,8 +44,6 @@ Once installed, initialize the class in your plugin:
 
 ```php
 require_once ABSPATH . 'vendor/autoload.php'; // If using Composer
-
-new Support_Access_Manager();
 ```
 
 This will:
