@@ -3,4 +3,4 @@
 /.gitignore export-ignore
 /.gitattributes export-ignore
 /support-access-manager.php export-ignore
-screenshot.jpg export-ignore
+/screenshot.jpg export-ignore
