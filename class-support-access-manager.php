@@ -1,4 +1,5 @@
 <?php
+namespace SupportAccessManager;
 
 if ( ! class_exists( 'Support_Access_Manager' ) ) {
 

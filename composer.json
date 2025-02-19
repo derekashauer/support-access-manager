@@ -1,11 +1,11 @@
 {
 	"name": "derekashauer/support-access-manager",
-	"description": "A library to create temporary admin users for support access in WordPress.",
+	"description": "A drop-in class to create temporary admin users for support access in WordPress.",
 	"type": "library",
 	"autoload": {
-		"psr-4": {
-			"SupportAccessManager\\": ""
-		}
+		"files": [
+			"class-support-access-manager.php"
+		]
 	},
 	"require": {
 		"php": ">=7.4"
