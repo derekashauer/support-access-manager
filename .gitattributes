@@ -1,7 +1,6 @@
-# Exclude from git archives and Packagist
+/README.md export-ignore
+/composer.json export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore
+/support-access-manager.php export-ignore
 screenshot.jpg export-ignore
-/screenshots export-ignore
-/assets export-ignore
-.gitattributes export-ignore
-.gitignore export-ignore
-README.md export-ignore
