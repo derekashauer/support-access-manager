@@ -103,10 +103,13 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			add_action( 'admin_menu', array( $this, 'add_support_access_menu' ) );
 
 			// Handle form submission to create temp admin users.
-			add_action( 'admin_init', array( $this, 'handle_access_form_submission' ) );
+			add_action( 'admin_post_create_access_user', array( $this, 'handle_access_form_submission' ) );
 
 			// Handle deletion of temporary admins.
 			add_action( 'admin_post_delete_access_user', array( $this, 'handle_access_deletion' ) );
+
+			// Handle generating new access URLs.
+			add_action( 'admin_init', array( $this, 'handle_url_generation' ) );
 		}
 
 		/**
@@ -189,24 +192,36 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			<div class="wrap">
 				<h1><?php esc_html_e( 'Support Access', $this->textdomain ); ?></h1>
 				<?php
-				// Check for transient message.
-				$message = get_transient( 'support_access_message_' . get_current_user_id() );
-				if ( $message ) {
-					delete_transient( 'support_access_message_' . get_current_user_id() );
+				// Check for success message.
+				if ( isset( $_GET['message'] ) && 'success' === $_GET['message'] ) {
+					$access_url = false;
+					if ( isset( $_GET['user_id'], $_GET['token'] ) ) {
+						$user_id = absint( $_GET['user_id'] );
+						$token   = sanitize_text_field( wp_unslash( $_GET['token'] ) );
+
+						$access_url = add_query_arg(
+							array(
+								'support_access' => $user_id . '|' . $token,
+							),
+							home_url()
+						);
+					}
+
 					printf(
-						'<div class="notice notice-%1$s is-dismissible"><p>%2$s</p>%3$s</div>',
-						esc_attr( $message['type'] ),
-						esc_html( $message['message'] ),
-						isset( $message['url'] ) ? sprintf(
+						'<div class="notice notice-warning is-dismissible"><p>%s</p>%s<p><strong>%s</strong></p></div>',
+						esc_html__( 'Support user access created successfully', $this->textdomain ),
+						$access_url ? sprintf(
 							'<p><strong>%s:</strong> <code>%s</code></p>',
 							esc_html__( 'Access URL', $this->textdomain ),
-							esc_url( $message['url'] )
-						) : ''
+							esc_url( $access_url )
+						) : '',
+						esc_html__( 'Important: Copy this URL now. For security reasons it cannot be displayed again.', $this->textdomain )
 					);
 				}
 				?>
 				
-				<form method="post" class="support-access-form">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="support-access-form">
+					<input type="hidden" name="action" value="create_access_user">
 					<?php wp_nonce_field( 'create_access_user' ); ?>
 					<table class="form-table">
 						<tbody>
@@ -450,23 +465,18 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				update_user_meta( $result['user_id'], 'locale', $locale );
 			}
 
-			// Store success message in transient.
-			set_transient(
-				'support_access_message_' . get_current_user_id(),
-				array(
-					'type'    => 'success',
-					'message' => __( 'Support access user created successfully.', $this->textdomain ),
-					'url'     => add_query_arg(
-						array(
-							'support_access' => $result['user_id'] . '|' . $result['access_token'],
-						),
-						home_url()
+			// Redirect with success message and access token.
+			wp_redirect(
+				add_query_arg(
+					array(
+						'page'    => 'support-access',
+						'message' => 'success',
+						'user_id' => $result['user_id'],
+						'token'   => $result['access_token'],
 					),
-				),
-				30
+					admin_url( 'users.php' )
+				)
 			);
-
-			wp_redirect( admin_url( 'users.php?page=support-access' ) );
 			exit;
 		}
 
@@ -485,10 +495,20 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			$user    = new WP_User( $user_id );
 			$user->set_role( $role );
 
-			// Generate random token and store its hash.
+			// Generate random token and store its hash for verification
 			$access_token = wp_generate_password( 32, false );
 			$token_hash   = hash( 'sha256', $access_token );
 			update_user_meta( $user_id, 'support_access_token_hash', $token_hash );
+
+			// Also store encrypted token for URL generation
+			$encrypted = openssl_encrypt(
+				$access_token,
+				'aes-256-cbc',
+				wp_salt( 'auth' ),
+				0,
+				substr( wp_salt( 'secure_auth' ), 0, 16 )
+			);
+			update_user_meta( $user_id, 'support_access_token_encrypted', $encrypted );
 
 			return array(
 				'user_id'      => $user_id,
@@ -612,11 +632,26 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						<td><?php echo esc_html( $expiration_date ); ?></td>
 						<td>
 							<?php if ( $access_url ) : ?>
-								<span class="action-icon" onclick="copyToClipboard('<?php echo esc_js( $access_url ); ?>')">
-									<span class="dashicons dashicons-clipboard" 
-										  title="<?php esc_attr_e( 'Copy URL', $this->textdomain ); ?>">
-									</span> <?php esc_html_e( 'Copy URL', $this->textdomain ); ?>
-								</span>
+								<a href="
+								<?php
+								echo esc_url(
+									wp_nonce_url(
+										add_query_arg(
+											array(
+												'page'    => 'support-access',
+												'action'  => 'generate_access_url',
+												'user_id' => $user->ID,
+											),
+											admin_url( 'users.php' )
+										),
+										'generate_access_url_' . $user->ID
+									)
+								);
+								?>
+								" class="button button-secondary">
+									<span class="dashicons dashicons-admin-links" style="vertical-align: text-top;"></span>
+									<?php esc_html_e( 'Generate New URL', $this->textdomain ); ?>
+								</a>
 							<?php endif; ?>
 						</td>
 						<td>
@@ -672,22 +707,65 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 		 * @return string|false The access URL or false if not found.
 		 */
 		private function get_access_url( $user_id ) {
-			// Get stored hash.
-			$stored_hash = get_user_meta( $user_id, 'support_access_token_hash', true );
-			if ( empty( $stored_hash ) ) {
+			// Get stored token.
+			$access_token = get_user_meta( $user_id, 'support_access_token_encrypted', true );
+			if ( empty( $access_token ) ) {
 				return false;
 			}
 
-			// Generate new token that will hash to the same value.
-			$access_token = wp_generate_password( 32, false );
-			update_user_meta( $user_id, 'support_access_token_hash', hash( 'sha256', $access_token ) );
+			// Decrypt the token
+			$decrypted = openssl_decrypt(
+				$access_token,
+				'aes-256-cbc',
+				wp_salt( 'auth' ),
+				0,
+				substr( wp_salt( 'secure_auth' ), 0, 16 )
+			);
 
+			// Return URL with decrypted token.
 			return add_query_arg(
 				array(
-					'support_access' => $user_id . '|' . $access_token,
+					'support_access' => $user_id . '|' . $decrypted,
 				),
 				home_url()
 			);
+		}
+
+		/**
+		 * Handle generating new access URL.
+		 */
+		public function handle_url_generation() {
+			if ( ! isset( $_GET['action'], $_GET['user_id'] ) || 'generate_access_url' !== $_GET['action'] ) {
+				return;
+			}
+
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
+
+			$user_id = absint( $_GET['user_id'] );
+			if ( ! wp_verify_nonce( $_GET['_wpnonce'], 'generate_access_url_' . $user_id ) ) {
+				wp_die( 'Invalid nonce' );
+			}
+
+			// Generate new token and hash
+			$access_token = wp_generate_password( 32, false );
+			$token_hash   = hash( 'sha256', $access_token );
+			update_user_meta( $user_id, 'support_access_token_hash', $token_hash );
+
+			// Redirect with success message and access token
+			wp_redirect(
+				add_query_arg(
+					array(
+						'page'    => 'support-access',
+						'message' => 'success',
+						'user_id' => $user_id,
+						'token'   => $access_token,
+					),
+					admin_url( 'users.php' )
+				)
+			);
+			exit;
 		}
 	}
 

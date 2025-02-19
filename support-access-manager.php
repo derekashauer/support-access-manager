@@ -5,7 +5,7 @@
  * Version: 1.0.0
  * Author: Derek Ashauer
  * Author URI: https://www.ashwebstudio.com
- * License: GPL-3.0+
+ * License: MIT
  *
  * @package Support_Access_Manager
  */
