@@ -95,7 +95,7 @@ The `defaults` array allows you to set default values for all form fields:
 
 ### Example Configurations
 
-#### Basic Support Setup
+#### Basic Setup
 
 ```php
 // Get the instance with default settings
@@ -113,7 +113,7 @@ Support_Access_Manager::get_instance( array(
 ) );
 ```
 
-#### Contractor Access
+#### Set custom defaults for menu label, duration, role
 
 ```php
 new Support_Access_Manager( array(
@@ -121,19 +121,16 @@ new Support_Access_Manager( array(
     'defaults'   => array(
         'duration'      => 1,
         'duration_unit' => 'months',
-        'usage_limit'   => 0,
         'role'          => 'author',
     ),
 ) );
 ```
 
-#### International Support Team
+#### Set custom defaults for login link timeout, usage limit, language
 
 ```php
 new Support_Access_Manager( array(
     'defaults' => array(
-        'duration'      => 1,
-        'duration_unit' => 'weeks',
         'timeout'       => 48,
         'usage_limit'   => 5,
         'role'          => 'editor',
@@ -142,17 +139,11 @@ new Support_Access_Manager( array(
 ) );
 ```
 
-#### Example with Custom Text Domain
+#### Use custom text domain
 
 ```php
 new Support_Access_Manager( array(
-    'menu_label' => 'Support Users',
     'textdomain' => 'my-plugin',
-    'defaults'   => array(
-        'duration'      => 2,
-        'duration_unit' => 'days',
-        'role'          => 'editor',
-    ),
 ) );
 ```
 
@@ -164,26 +155,6 @@ Then in your plugin's translation files, you can include translations for all th
 - The menu will only be visible to users with the 'manage_options' capability
 - Temporary users are automatically deleted when they expire
 - Access URLs can be configured to expire independently of the user account
-
-### Basic Usage
-
-```php
-// Get the instance with default settings
-Support_Access_Manager::get_instance();
-
-// Or get the instance with custom settings
-Support_Access_Manager::get_instance( array(
-    'menu_label' => 'Support Users',
-    'defaults'   => array(
-        'duration'      => 2,
-        'duration_unit' => 'days',
-        'timeout'       => 24,
-        'role'          => 'editor',
-    ),
-) );
-```
-
-Note: Configuration options only take effect the first time the instance is created. Subsequent calls to `get_instance()` will return the existing instance with its original configuration.
 
 ---
 
