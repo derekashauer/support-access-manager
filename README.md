@@ -41,9 +41,9 @@ If you prefer not to use Composer, simply download `class-support-access-manager
 require_once 'path/to/class-support-access-manager.php';
 ```
 
-### Configuration Options
+## Configuration Options
 
-#### Menu Settings
+### Menu Settings
 
 - `menu_slug` (string) - The URL slug for the admin page
   - Default: 'support-access'
@@ -62,7 +62,7 @@ require_once 'path/to/class-support-access-manager.php';
   - Example: 'my-plugin'
   - Use your plugin's textdomain to provide your own translations
 
-#### Form Defaults
+### Form Defaults
 
 The `defaults` array allows you to set default values for all form fields:
 
@@ -158,7 +158,7 @@ new Support_Access_Manager( array(
 
 Then in your plugin's translation files, you can include translations for all the strings used by Support Access Manager.
 
-## Notes
+### Notes
 
 - All default values can be overridden when creating individual temporary users
 - The menu will only be visible to users with the 'manage_options' capability
