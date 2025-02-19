@@ -38,25 +38,54 @@ require_once 'path/to/class-support-access-manager.php';
 
 ## Usage
 
+### Basic Usage (Single Instance)
 ```php
 // Get the instance with default settings
 Support_Access_Manager::get_instance();
 
-// Or get the instance with all custom settings
+// Or get the instance with custom settings
 Support_Access_Manager::get_instance( array(
     'menu_label' => 'Support Users',
-	'menu_slug' => 
+    'menu_slug'  => 'support-users',
     'textdomain' => 'my-plugin',
     'defaults'   => array(
         'duration'      => 2,
         'duration_unit' => 'days',
-        'usage_limit'   => 5,
-        'timeout'       => 24,
         'role'          => 'editor',
-        'locale'        => 'es_ES',
     ),
 ) );
 ```
+
+### Custom Instance
+If you need a completely separate instance with its own settings, you can extend the class:
+
+```php
+class My_Custom_Support_Access extends Support_Access_Manager {
+    // Override the singleton functionality
+    public static function get_instance( $args = array() ) {
+        return new self( $args );
+    }
+
+    // Make constructor public
+    public function __construct( $args = array() ) {
+        parent::__construct( $args );
+    }
+}
+
+// Create your custom instance
+$my_support = My_Custom_Support_Access::get_instance( array(
+    'menu_slug'   => 'my-custom-support',
+    'menu_label'  => 'My Custom Support',
+    'parent_slug' => 'tools.php',
+    'textdomain'  => 'my-plugin',
+) );
+```
+
+This approach allows you to:
+1. Have multiple instances with different settings
+2. Override or extend functionality
+3. Place the menu item in different locations
+4. Use your own translations
 
 ### Menu Settings
 
