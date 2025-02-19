@@ -32,7 +32,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				$args,
 				array(
 					'menu_slug'   => 'support-access',
-					'menu_label'  => 'Support Access',
+					'menu_label'  => __( 'Support Access', $this->textdomain ),
 					'parent_slug' => 'users.php',
 					'textdomain'  => 'support-access',
 					'defaults'    => array(),
