@@ -188,7 +188,9 @@ Then in your plugin's translation files, you can include translations for all th
 
 ## License
 
-This project is licensed under the **GPL-3.0**.
+This project is licensed under the **MIT License**.
+
+See the [LICENSE](LICENSE) file for details.
 
 ---
 

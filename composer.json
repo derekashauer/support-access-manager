@@ -1,7 +1,8 @@
 {
 	"name": "derekashauer/support-access-manager",
-	"description": "A drop-in class to create temporary admin users for support access in WordPress.",
+	"description": "Creates temporary WordPress admin accounts with expiration and access limits",
 	"type": "library",
+	"license": "MIT",
 	"autoload": {
 		"files": [
 			"class-support-access-manager.php"

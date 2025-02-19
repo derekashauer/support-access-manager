@@ -7,7 +7,7 @@
  * @package   Support_Access_Manager
  * @author    Derek Ashauer
  * @copyright Copyright (c) 2024, Derek Ashauer
- * @license   GPL-3.0+
+ * @license   MIT
  * @link      https://github.com/derekashauer/support-access-manager
  * @version   0.2.0
  *
@@ -439,122 +439,35 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			$locale = sanitize_text_field( wp_unslash( $_POST['user_locale'] ) );
 
 			// Create temporary user and get access token.
-			$result         = $this->create_access_user( $role );
-			$access_user_id = $result['user_id'];
-			$access_token   = $result['access_token'];
+			$result = $this->create_access_user( $role );
 
 			// Store user metadata.
-			update_user_meta( $access_user_id, 'support_access_token_hash', $this->generate_secure_hash( $access_token ) );
-			update_user_meta( $access_user_id, 'support_access_login_count', 0 );
-			update_user_meta( $access_user_id, 'support_access_expiration', $expiration_time );
-			update_user_meta( $access_user_id, 'support_access_limit', $limit );
+			update_user_meta( $result['user_id'], 'support_access_login_count', 0 );
+			update_user_meta( $result['user_id'], 'support_access_expiration', $expiration_time );
+			update_user_meta( $result['user_id'], 'support_access_limit', $limit );
 
 			if ( ! empty( $locale ) ) {
-				update_user_meta( $access_user_id, 'locale', $locale );
+				update_user_meta( $result['user_id'], 'locale', $locale );
 			}
 
-			// Generate the access URL but don't store it.
-			$access_url = add_query_arg(
-				array(
-					'support_access' => $access_token,
-				),
-				home_url()
-			);
-
-			// Store success message with the URL.
+			// Store success message in transient.
 			set_transient(
 				'support_access_message_' . get_current_user_id(),
 				array(
 					'type'    => 'success',
 					'message' => __( 'Support access user created successfully.', $this->textdomain ),
-					'url'     => $access_url, // Include URL in the message
+					'url'     => add_query_arg(
+						array(
+							'support_access' => $result['user_id'] . '|' . $result['access_token'],
+						),
+						home_url()
+					),
 				),
 				30
 			);
 
 			wp_redirect( admin_url( 'users.php?page=support-access' ) );
 			exit;
-		}
-
-		/**
-		 * Generate a secure hash using BLAKE2b.
-		 *
-		 * @param string $data The data to hash.
-		 * @return string The hashed data.
-		 */
-		private function generate_secure_hash( $data ) {
-			if ( ! function_exists( 'sodium_crypto_generichash' ) ) {
-				// Fallback to wp_hash if sodium is not available.
-				return wp_hash( $data );
-			}
-
-			// Generate a key from WordPress salt, ensuring correct length.
-			$key = substr(
-				hash( 'sha256', wp_salt( 'auth' ), true ),
-				0,
-				SODIUM_CRYPTO_GENERICHASH_KEYBYTES
-			);
-
-			return sodium_crypto_generichash(
-				$data,
-				$key,
-				SODIUM_CRYPTO_GENERICHASH_BYTES_MAX
-			);
-		}
-
-		/**
-		 * Encrypt a string using OpenSSL.
-		 *
-		 * @param string $data String to encrypt.
-		 * @return string|false Encrypted string or false on failure.
-		 */
-		private function encrypt_string( $data ) {
-			$method = 'aes-256-cbc';
-			$key    = substr( hash( 'sha256', wp_salt( 'auth' ), true ), 0, 32 );
-			$iv     = random_bytes( 16 ); // Generate IV.
-
-			$encrypted = openssl_encrypt(
-				$data,
-				$method,
-				$key,
-				OPENSSL_RAW_DATA,
-				$iv
-			);
-
-			if ( false === $encrypted ) {
-				return false;
-			}
-
-			// Combine IV and encrypted data.
-			return base64_encode( $iv . $encrypted );
-		}
-
-		/**
-		 * Decrypt a string using OpenSSL.
-		 *
-		 * @param string $data String to decrypt.
-		 * @return string|false Decrypted string or false on failure.
-		 */
-		private function decrypt_string( $data ) {
-			$method = 'aes-256-cbc';
-			$key    = substr( hash( 'sha256', wp_salt( 'auth' ), true ), 0, 32 );
-
-			$data = base64_decode( $data );
-			if ( false === $data ) {
-				return false;
-			}
-
-			// Extract IV and encrypted data.
-			$iv        = substr( $data, 0, 16 );
-			$encrypted = substr( $data, 16 );
-
-			return openssl_decrypt(
-				$encrypted,
-				$method,
-				$key,
-				OPENSSL_RAW_DATA,
-				$iv
-			);
 		}
 
 		/**
@@ -572,45 +485,14 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			$user    = new WP_User( $user_id );
 			$user->set_role( $role );
 
-			// Generate random token for URL.
+			// Generate random token and store its hash.
 			$access_token = wp_generate_password( 32, false );
-
-			// Store hash for verification.
-			$token_hash = $this->generate_secure_hash( $access_token );
+			$token_hash   = hash( 'sha256', $access_token );
 			update_user_meta( $user_id, 'support_access_token_hash', $token_hash );
-
-			// Encrypt and store the full access token.
-			$encrypted_token = $this->encrypt_string( $access_token );
-			update_user_meta( $user_id, 'support_access_token_encrypted', $encrypted_token );
 
 			return array(
 				'user_id'      => $user_id,
 				'access_token' => $access_token,
-			);
-		}
-
-		/**
-		 * Get the access URL for a user.
-		 *
-		 * @param int $user_id The user ID.
-		 * @return string|false The access URL or false if not found/invalid.
-		 */
-		private function get_access_url( $user_id ) {
-			$encrypted_token = get_user_meta( $user_id, 'support_access_token_encrypted', true );
-			if ( empty( $encrypted_token ) ) {
-				return false;
-			}
-
-			$access_token = $this->decrypt_string( $encrypted_token );
-			if ( false === $access_token ) {
-				return false;
-			}
-
-			return add_query_arg(
-				array(
-					'support_access' => $access_token,
-				),
-				home_url()
 			);
 		}
 
@@ -622,69 +504,50 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				return;
 			}
 
-			$received_token = sanitize_text_field( wp_unslash( $_GET['support_access'] ) );
-
-			// Query for users with matching token hash.
-			$args = array(
-				'meta_query' => array(
-					'relation' => 'AND',
-					array(
-						'key'     => 'support_access_token_encrypted',
-						'compare' => 'EXISTS',
-					),
-					array(
-						'key'     => 'support_access_expiration',
-						'compare' => 'EXISTS',
-					),
-				),
-			);
-
-			$user_query = new WP_User_Query( $args );
-
-			if ( empty( $user_query->results ) ) {
+			$parts = explode( '|', sanitize_text_field( wp_unslash( $_GET['support_access'] ) ) );
+			if ( count( $parts ) !== 2 ) {
 				wp_safe_redirect( home_url() );
 				exit;
 			}
 
-			// Check each user's token.
-			foreach ( $user_query->results as $user ) {
-				$encrypted_token = get_user_meta( $user->ID, 'support_access_token_encrypted', true );
-				$decrypted_token = $this->decrypt_string( $encrypted_token );
+			list( $user_id, $received_token ) = $parts;
+			$user_id                          = absint( $user_id );
 
-				if ( $decrypted_token === $received_token ) {
-					// Found matching user.
-					$access_user_id = $user->ID;
-					$expiration     = get_user_meta( $access_user_id, 'support_access_expiration', true );
-					$limit          = get_user_meta( $access_user_id, 'support_access_limit', true );
-					$login_count    = get_user_meta( $access_user_id, 'support_access_login_count', true );
-
-					// Check if account has expired.
-					if ( time() > $expiration ) {
-						wp_delete_user( $access_user_id );
-						wp_safe_redirect( home_url() );
-						exit;
-					}
-
-					// Check login count limit.
-					if ( $limit > 0 && $login_count >= $limit ) {
-						wp_safe_redirect( home_url() );
-						exit;
-					}
-
-					// All checks passed, log the user in.
-					wp_set_current_user( $access_user_id );
-					wp_set_auth_cookie( $access_user_id );
-
-					// Increment the login count.
-					update_user_meta( $access_user_id, 'support_access_login_count', intval( $login_count ) + 1 );
-
-					wp_safe_redirect( admin_url() );
-					exit;
-				}
+			// Get stored hash.
+			$stored_hash = get_user_meta( $user_id, 'support_access_token_hash', true );
+			if ( empty( $stored_hash ) ) {
+				wp_safe_redirect( home_url() );
+				exit;
 			}
 
-			// No matching token found.
-			wp_safe_redirect( home_url() );
+			// Verify token.
+			if ( ! hash_equals( $stored_hash, hash( 'sha256', $received_token ) ) ) {
+				wp_safe_redirect( home_url() );
+				exit;
+			}
+
+			// Check expiration and limits.
+			$expiration  = get_user_meta( $user_id, 'support_access_expiration', true );
+			$limit       = get_user_meta( $user_id, 'support_access_limit', true );
+			$login_count = get_user_meta( $user_id, 'support_access_login_count', true );
+
+			if ( time() > $expiration ) {
+				wp_delete_user( $user_id );
+				wp_safe_redirect( home_url() );
+				exit;
+			}
+
+			if ( $limit > 0 && $login_count >= $limit ) {
+				wp_safe_redirect( home_url() );
+				exit;
+			}
+
+			// Log the user in.
+			wp_set_current_user( $user_id );
+			wp_set_auth_cookie( $user_id );
+			update_user_meta( $user_id, 'support_access_login_count', intval( $login_count ) + 1 );
+
+			wp_safe_redirect( admin_url() );
 			exit;
 		}
 
@@ -696,7 +559,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				'meta_query' => array(
 					'relation' => 'AND',
 					array(
-						'key'     => 'support_access_token_encrypted',
+						'key'     => 'support_access_token_hash',
 						'compare' => 'EXISTS',
 					),
 					array(
@@ -800,6 +663,31 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 					exit;
 				}
 			}
+		}
+
+		/**
+		 * Get the access URL for a user.
+		 *
+		 * @param int $user_id The user ID.
+		 * @return string|false The access URL or false if not found.
+		 */
+		private function get_access_url( $user_id ) {
+			// Get stored hash.
+			$stored_hash = get_user_meta( $user_id, 'support_access_token_hash', true );
+			if ( empty( $stored_hash ) ) {
+				return false;
+			}
+
+			// Generate new token that will hash to the same value.
+			$access_token = wp_generate_password( 32, false );
+			update_user_meta( $user_id, 'support_access_token_hash', hash( 'sha256', $access_token ) );
+
+			return add_query_arg(
+				array(
+					'support_access' => $user_id . '|' . $access_token,
+				),
+				home_url()
+			);
 		}
 	}
 
