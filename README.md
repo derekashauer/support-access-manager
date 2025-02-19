@@ -2,6 +2,12 @@
 
 Support Access Manager is a lightweight PHP class for WordPress that allows temporary admin accounts to be created with expiration and access limits. It can be easily dropped into any project or installed via Composer.
 
+✅ Create temporary admin accounts  
+✅ Set expiration times (e.g., auto-delete after 24 hours)  
+✅ Limit number of logins per account  
+✅ Secure login URLs for support access  
+✅ Cron-based cleanup of expired accounts  
+
 ## Install via Composer (Recommended)
 To include Support Access Manager in your WordPress plugin or theme, add it as a dependency:
 
@@ -101,14 +107,17 @@ The `defaults` array allows you to set default values for all form fields:
 // Get the instance with default settings
 Support_Access_Manager::get_instance();
 
-// Or get the instance with custom settings
+// Or get the instance with all custom settings
 Support_Access_Manager::get_instance( array(
     'menu_label' => 'Support Users',
+    'textdomain' => 'my-plugin',
     'defaults'   => array(
         'duration'      => 2,
         'duration_unit' => 'days',
+        'usage_limit'   => 5,
         'timeout'       => 24,
         'role'          => 'editor',
+        'locale'        => 'es_ES',
     ),
 ) );
 ```
@@ -155,24 +164,6 @@ Then in your plugin's translation files, you can include translations for all th
 - The menu will only be visible to users with the 'manage_options' capability
 - Temporary users are automatically deleted when they expire
 - Access URLs can be configured to expire independently of the user account
-
----
-
-This will:
-- Add a **Support Access** menu under **Users** in the WordPress admin.
-- Allow temporary admin users to be created.
-- Automatically delete expired temporary admins.
-- Provide a unique login URL with optional limits and timeouts.
-
----
-
-## Features
-
-✅ Create temporary admin accounts  
-✅ Set expiration times (e.g., auto-delete after 24 hours)  
-✅ Limit number of logins per account  
-✅ Secure login URLs for support access  
-✅ Cron-based cleanup of expired accounts  
 
 ---
 
