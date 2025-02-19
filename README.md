@@ -38,15 +38,14 @@ require_once 'path/to/class-support-access-manager.php';
 
 ## Usage
 
-### Basic Usage (Single Instance)
+Get the shared instance with optional custom settings:
+
 ```php
-// Get the instance with default settings
+// Basic usage
 Support_Access_Manager::get_instance();
 
-// Or get the instance with custom settings
+// With custom defaults
 Support_Access_Manager::get_instance( array(
-    'menu_label' => 'Support Users',
-    'menu_slug'  => 'support-users',
     'textdomain' => 'my-plugin',
     'defaults'   => array(
         'duration'      => 2,
@@ -56,55 +55,11 @@ Support_Access_Manager::get_instance( array(
 ) );
 ```
 
-### Custom Instance
-If you need a completely separate instance with its own settings, you can extend the class:
-
-```php
-class My_Custom_Support_Access extends Support_Access_Manager {
-    // Override the singleton functionality
-    public static function get_instance( $args = array() ) {
-        return new self( $args );
-    }
-
-    // Make constructor public
-    public function __construct( $args = array() ) {
-        parent::__construct( $args );
-    }
-}
-
-// Create your custom instance
-$my_support = My_Custom_Support_Access::get_instance( array(
-    'menu_slug'   => 'my-custom-support',
-    'menu_label'  => 'My Custom Support',
-    'parent_slug' => 'tools.php',
-    'textdomain'  => 'my-plugin',
-) );
-```
-
-This approach allows you to:
-1. Have multiple instances with different settings
-2. Override or extend functionality
-3. Place the menu item in different locations
-4. Use your own translations
-
-### Menu Settings
-
-- `menu_slug` (string) - The URL slug for the admin page
-  - Default: 'support-access'
-  - Example: 'temp-users'
-
-- `menu_label` (string) - The text shown in the admin menu
-  - Default: 'Support Access'
-  - Example: 'Temporary Users'
-
-- `parent_slug` (string) - Where to place the menu item
-  - Default: 'users.php' (Users menu)
-  - Common values: 'tools.php', 'options-general.php', 'settings.php'
+### Optional Settings
 
 - `textdomain` (string) - Text domain for translations
   - Default: 'support-access'
   - Example: 'my-plugin'
-  - Use your plugin's textdomain to provide your own translations
 
 ### Form Defaults
 
