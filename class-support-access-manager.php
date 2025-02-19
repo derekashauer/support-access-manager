@@ -1,6 +1,4 @@
 <?php
-namespace SupportAccessManager;
-
 if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 	class Support_Access_Manager {
@@ -88,139 +86,358 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			<div class="wrap">
 				<h1><?php esc_html_e( 'Support Access', 'support-access' ); ?></h1>
 				<?php if ( isset( $_GET['message'] ) ) : ?>
-					<div class="updated"><p><?php echo esc_html( $_GET['message'] ); ?></p></div>
+					<div class="updated"><p><?php echo esc_html( wp_unslash( $_GET['message'] ) ); ?></p></div>
 				<?php endif; ?>
-				<form method="post">
-					<label for="access_duration"><?php esc_html_e( 'Temporary Admin Access Duration (days):', 'support-access' ); ?></label>
-					<input type="number" name="access_duration" id="access_duration" value="1" min="1" required>
-					<br>
-					<label for="access_timeout"><?php esc_html_e( 'Timeout Duration (hours):', 'support-access' ); ?></label>
-					<input type="number" name="access_timeout" id="access_timeout" value="" min="1">
-					<br>
-					<label for="access_limit"><?php esc_html_e( 'Limit Number of Uses:', 'support-access' ); ?></label>
-					<input type="number" name="access_limit" id="access_limit" value="" min="0">
-					<br>
-					<?php submit_button( 'Generate Temporary Admin Access' ); ?>
+				
+				<form method="post" class="support-access-form">
+					<?php wp_nonce_field( 'create_temp_admin' ); ?>
+					<table class="form-table">
+						<tbody>
+
+							<tr>
+								<th scope="row">
+									<label for="access_duration_type"><?php esc_html_e( 'Access Duration:', 'support-access' ); ?></label>
+								</th>
+								<td>
+									<select name="access_duration_type" id="access_duration_type">
+										<option value="day"><?php esc_html_e( '1 Day', 'support-access' ); ?></option>
+										<option value="week"><?php esc_html_e( '1 Week', 'support-access' ); ?></option>
+										<option value="month"><?php esc_html_e( '1 Month', 'support-access' ); ?></option>
+										<option value="custom"><?php esc_html_e( 'Custom Date', 'support-access' ); ?></option>
+									</select>
+									<div id="custom_date_wrapper" style="display: none; margin-top: 10px;">
+										<input type="datetime-local" name="custom_expiration" id="custom_expiration">
+									</div>
+									<p class="description">
+										<?php esc_html_e( 'How long the temporary user account will exist before being automatically deleted.', 'support-access' ); ?>
+									</p>
+								</td>
+							</tr>
+
+							<tr>
+								<th scope="row">
+									<label for="access_timeout"><?php esc_html_e( 'Login Link Timeout:', 'support-access' ); ?></label>
+								</th>
+								<td>
+									<input type="number" name="access_timeout" id="access_timeout" value="" min="1" class="small-text">
+									<p class="description">
+										<?php esc_html_e( 'Number of hours the login link remains valid after generation. Leave empty for no timeout (link works until account expires).', 'support-access' ); ?>
+									</p>
+								</td>
+							</tr>
+
+							<tr>
+								<th scope="row">
+									<label for="access_limit"><?php esc_html_e( 'Usage Limit:', 'support-access' ); ?></label>
+								</th>
+								<td>
+									<input type="number" name="access_limit" id="access_limit" value="" min="0" class="small-text">
+									<p class="description">
+										<?php esc_html_e( 'Maximum number of times the login link can be used. Enter 0 or leave empty for unlimited uses.', 'support-access' ); ?>
+									</p>
+								</td>
+							</tr>
+
+							<tr>
+								<th scope="row">
+									<label for="user_role"><?php esc_html_e( 'User Role:', 'support-access' ); ?></label>
+								</th>
+								<td>
+									<select name="user_role" id="user_role">
+										<?php
+										$roles = wp_roles()->get_names();
+										foreach ( $roles as $role_id => $role_name ) {
+											printf(
+												'<option value="%s" %s>%s</option>',
+												esc_attr( $role_id ),
+												selected( $role_id, 'administrator', false ),
+												esc_html( $role_name )
+											);
+										}
+										?>
+									</select>
+									<p class="description">
+										<?php esc_html_e( 'The WordPress role assigned to the temporary user. Choose the minimum role needed for the support task.', 'support-access' ); ?>
+									</p>
+								</td>
+							</tr>
+
+							<tr>
+								<th scope="row">
+									<label for="user_locale"><?php esc_html_e( 'User Language:', 'support-access' ); ?></label>
+								</th>
+								<td>
+									<?php
+									require_once ABSPATH . 'wp-admin/includes/translation-install.php';
+									$translations = wp_get_available_translations();
+									$languages    = array(
+										'' => sprintf(
+											/* translators: %s: Current site language name */
+											__( 'Site Default - %s', 'support-access' ),
+											$translations[ get_locale() ]['native_name'] ?? 'English (United States)'
+										),
+									);
+
+									// Add installed languages
+									$installed_languages = get_available_languages();
+									foreach ( $installed_languages as $locale ) {
+										if ( isset( $translations[ $locale ] ) ) {
+											$languages[ $locale ] = $translations[ $locale ]['native_name'];
+										}
+									}
+
+									// Always include English (US) if not already added
+									if ( ! isset( $languages['en_US'] ) ) {
+										$languages['en_US'] = 'English (United States)';
+									}
+
+									$current_locale = get_locale();
+									?>
+									<select name="user_locale" id="user_locale">
+										<?php
+										foreach ( $languages as $locale => $native_name ) {
+											printf(
+												'<option value="%s" %s>%s</option>',
+												esc_attr( $locale ),
+												selected( $locale, '', false ),
+												esc_html( $native_name )
+											);
+										}
+										?>
+									</select>
+									<p class="description">
+										<?php esc_html_e( 'The WordPress admin interface language for this temporary user. Choose "Site Default" to use the site\'s language setting.', 'support-access' ); ?>
+									</p>
+								</td>
+							</tr>
+
+						</tbody>
+					</table>
+
+					<?php submit_button( __( 'Create Temporary User', 'support-access' ) ); ?>
 				</form>
-	
-				<?php if ( ! get_option( 'support_access_user_id' ) ) : ?>
-					<p><?php esc_html_e( 'No temporary admin user created yet.', 'support-access' ); ?></p>
-				<?php endif; ?>
-	
-				<h2><?php esc_html_e( 'Temporary Admin Users', 'support-access' ); ?></h2>
+
 				<?php $this->list_temp_admins(); ?>
 			</div>
+
 			<script type="text/javascript">
-				function copyToClipboard(url) {
-					var tempInput = document.createElement('input');
-					tempInput.value = url;
-					document.body.appendChild(tempInput);
-					tempInput.select();
-					document.execCommand('copy');
-					document.body.removeChild(tempInput);
-					alert('URL copied to clipboard!');
-				}
+				jQuery(document).ready(function($) {
+					$('#access_duration_type').on('change', function() {
+						if ($(this).val() === 'custom') {
+							$('#custom_date_wrapper').show();
+						} else {
+							$('#custom_date_wrapper').hide();
+						}
+					});
+
+					// Move copyToClipboard outside jQuery and make it global
+					window.copyToClipboard = function(url) {
+						// Use modern clipboard API if available
+						if (navigator.clipboard && window.isSecureContext) {
+							navigator.clipboard.writeText(url).then(() => {
+								alert('URL copied to clipboard!');
+							}).catch(() => {
+								// Fallback to older method if clipboard API fails
+								fallbackCopyToClipboard(url);
+							});
+						} else {
+							// Fallback for older browsers
+							fallbackCopyToClipboard(url);
+						}
+					};
+
+					function fallbackCopyToClipboard(url) {
+						const tempInput = document.createElement('input');
+						tempInput.value = url;
+						document.body.appendChild(tempInput);
+						tempInput.select();
+						document.execCommand('copy');
+						document.body.removeChild(tempInput);
+						alert('URL copied to clipboard!');
+					}
+				});
 			</script>
 			<?php
 		}
 
 		// Handle form submission and create the temp admin user
 		public function handle_temp_admin_form_submission() {
-			if ( isset( $_POST['access_duration'] ) && current_user_can( 'manage_options' ) ) {
-				$duration = absint( $_POST['access_duration'] );
-				$timeout  = ! empty( $_POST['access_timeout'] ) ? absint( $_POST['access_timeout'] ) * HOUR_IN_SECONDS : 0; // Convert hours to seconds or set to 0
-				$limit    = absint( $_POST['access_limit'] );
-
-				// Create temporary user and URL
-				$temp_user_id    = $this->create_temp_admin_user();
-				$temp_user_url   = $this->generate_temp_user_url( $temp_user_id );
-				$expiration_time = time() + ( $duration * DAY_IN_SECONDS );
-
-				// Store URL, expiration time, timeout, and use limit
-				update_user_meta( $temp_user_id, 'support_access_url', $temp_user_url );
-				update_user_meta( $temp_user_id, 'temp_admin_login_count', 0 );
-				update_user_meta( $temp_user_id, 'support_access_expiration', $expiration_time );
-				update_user_meta( $temp_user_id, 'support_access_timeout', $timeout );
-				update_user_meta( $temp_user_id, 'support_access_limit', $limit );
-
-				wp_redirect( add_query_arg( 'message', 'Temporary Admin Access URL generated successfully.', admin_url( 'users.php?page=support-access' ) ) );
-				exit;
+			if ( ! isset( $_POST['access_duration_type'] ) || ! current_user_can( 'manage_options' ) ) {
+				return;
 			}
+
+			if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'create_temp_admin' ) ) {
+				wp_die( 'Invalid nonce' );
+			}
+
+			// Calculate expiration time based on duration type
+			$duration_type = sanitize_text_field( wp_unslash( $_POST['access_duration_type'] ) );
+			if ( $duration_type === 'custom' && ! empty( $_POST['custom_expiration'] ) ) {
+				$expiration_time = strtotime( wp_unslash( $_POST['custom_expiration'] ) );
+			} else {
+				$duration_days   = array(
+					'day'   => 1,
+					'week'  => 7,
+					'month' => 30,
+				);
+				$days            = $duration_days[ $duration_type ] ?? 1;
+				$expiration_time = time() + ( $days * DAY_IN_SECONDS );
+			}
+
+			$timeout = ! empty( $_POST['access_timeout'] ) ? absint( $_POST['access_timeout'] ) * HOUR_IN_SECONDS : 0;
+			$limit   = isset( $_POST['access_limit'] ) ? absint( $_POST['access_limit'] ) : 0;
+			$role    = sanitize_text_field( wp_unslash( $_POST['user_role'] ) );
+			$locale  = sanitize_text_field( wp_unslash( $_POST['user_locale'] ) );
+
+			// Create temporary user and URL
+			$temp_user_id = $this->create_temp_admin_user( $role );
+
+			// Generate access token data
+			$token_data = array(
+				'id'    => $temp_user_id,
+				'time'  => time(),
+				'nonce' => wp_generate_password( 12, false ), // Add a nonce for extra security
+			);
+
+			$data         = base64_encode( json_encode( $token_data ) );
+			$hash         = hash_hmac( 'sha256', $data, wp_salt( 'auth' ) ); // Use WordPress salt instead of hardcoded key
+			$access_token = $data . '.' . $hash;
+
+			$temp_user_url = add_query_arg(
+				array(
+					'support_access' => $access_token,
+				),
+				home_url()
+			);
+
+			// Store user metadata
+			update_user_meta( $temp_user_id, 'support_access_url', $temp_user_url );
+			update_user_meta( $temp_user_id, 'support_access_token', $access_token ); // Store the token for verification
+			update_user_meta( $temp_user_id, 'temp_admin_login_count', 0 );
+			update_user_meta( $temp_user_id, 'support_access_expiration', $expiration_time );
+			update_user_meta( $temp_user_id, 'support_access_timeout', $timeout );
+			update_user_meta( $temp_user_id, 'support_access_limit', $limit );
+
+			if ( ! empty( $locale ) ) {
+				update_user_meta( $temp_user_id, 'locale', $locale );
+			}
+
+			wp_redirect( add_query_arg( 'message', 'Temporary Access URL generated successfully.', admin_url( 'users.php?page=support-access' ) ) );
+			exit;
 		}
 
 		// Create temporary admin user
-		private function create_temp_admin_user() {
-			$username = 'support_admin_' . uniqid();
+		private function create_temp_admin_user( $role = 'administrator' ) {
+			$username = 'support_user_' . uniqid();
 			$password = wp_generate_password();
 			$email    = $username . '@example.com';
-			$user_id  = wp_create_user( $username, $password, $email );
-			$user     = new WP_User( $user_id );
-			$user->set_role( 'administrator' );
 
-			$hash = hash_hmac( 'sha256', $user_id . time(), 'your-secret-key' );
-			update_user_meta( $user_id, 'support_access_hash', $hash );  // Store the hash
+			$user_id = wp_create_user( $username, $password, $email );
+			$user    = new WP_User( $user_id );
+			$user->set_role( $role );
 
 			return $user_id;
 		}
 
-		// Generate the temporary URL
-		private function generate_temp_user_url( $user_id ) {
-			$hash = hash_hmac( 'sha256', $user_id . time(), 'your-secret-key' );
-			return add_query_arg(
-				array(
-					'temp_admin' => $user_id,
-					'hash'       => $hash,
-				),
-				home_url()
-			);
-		}
-
 		// Check if the temp_admin hash matches and log in the user
 		public function check_temp_admin_login() {
-			if ( isset( $_GET['temp_admin'] ) && isset( $_GET['hash'] ) ) {
-				$temp_user_id = absint( $_GET['temp_admin'] );
-				$hash         = sanitize_text_field( $_GET['hash'] );
-				$stored_hash  = get_user_meta( $temp_user_id, 'support_access_hash', true );
-				$timeout      = get_user_meta( $temp_user_id, 'support_access_timeout', true );
-				$limit        = get_user_meta( $temp_user_id, 'support_access_limit', true );
-				$login_count  = get_user_meta( $temp_user_id, 'temp_admin_login_count', true );
+			if ( ! isset( $_GET['support_access'] ) ) {
+				return;
+			}
 
-				// If hash matches and login count is within limit
-				if ( $stored_hash && hash_equals( $stored_hash, $hash ) && $login_count < $limit ) {
-					// Check if the URL has expired
-					if ( time() > ( get_user_meta( $temp_user_id, 'support_access_expiration', true ) + $timeout ) ) {
-						wp_redirect( home_url() ); // Redirect to an error page or home
-						exit;
-					}
+			$access_token = sanitize_text_field( wp_unslash( $_GET['support_access'] ) );
 
-					wp_set_current_user( $temp_user_id );
-					wp_set_auth_cookie( $temp_user_id );
+			// Split token into data and hash
+			$parts = explode( '.', $access_token );
+			if ( count( $parts ) !== 2 ) {
+				wp_safe_redirect( home_url() );
+				exit;
+			}
 
-					// Increment the login count
-					update_user_meta( $temp_user_id, 'temp_admin_login_count', $login_count + 1 );
+			list( $data, $received_hash ) = $parts;
 
-					wp_redirect( admin_url() );
-					exit;
-				} else {
-					wp_redirect( home_url() ); // Redirect to an error page or home
+			// Verify hash
+			$expected_hash = hash_hmac( 'sha256', $data, wp_salt( 'auth' ) );
+			if ( ! hash_equals( $expected_hash, $received_hash ) ) {
+				wp_safe_redirect( home_url() );
+				exit;
+			}
+
+			// Decode the data
+			$decoded = json_decode( base64_decode( $data ), true );
+			if ( ! $decoded || ! isset( $decoded['id'] ) || ! isset( $decoded['time'] ) || ! isset( $decoded['nonce'] ) ) {
+				wp_safe_redirect( home_url() );
+				exit;
+			}
+
+			$temp_user_id = absint( $decoded['id'] );
+
+			// Verify user exists and token matches
+			$stored_token = get_user_meta( $temp_user_id, 'support_access_token', true );
+			if ( empty( $stored_token ) || $stored_token !== $access_token ) {
+				wp_safe_redirect( home_url() );
+				exit;
+			}
+
+			// Get user metadata
+			$expiration  = get_user_meta( $temp_user_id, 'support_access_expiration', true );
+			$timeout     = get_user_meta( $temp_user_id, 'support_access_timeout', true );
+			$limit       = get_user_meta( $temp_user_id, 'support_access_limit', true );
+			$login_count = get_user_meta( $temp_user_id, 'temp_admin_login_count', true );
+
+			// Check if account has expired
+			if ( time() > $expiration ) {
+				wp_delete_user( $temp_user_id );
+				wp_safe_redirect( home_url() );
+				exit;
+			}
+
+			// Check login count limit
+			if ( $limit > 0 && $login_count >= $limit ) {
+				wp_safe_redirect( home_url() );
+				exit;
+			}
+
+			// Check URL timeout
+			if ( ! empty( $timeout ) ) {
+				if ( time() > ( $decoded['time'] + $timeout ) ) {
+					wp_safe_redirect( home_url() );
 					exit;
 				}
 			}
+
+			// All checks passed, log the user in
+			wp_set_current_user( $temp_user_id );
+			wp_set_auth_cookie( $temp_user_id );
+
+			// Increment the login count
+			update_user_meta( $temp_user_id, 'temp_admin_login_count', intval( $login_count ) + 1 );
+
+			wp_safe_redirect( admin_url() );
+			exit;
 		}
 
 		// List temporary admins with login count, expiration date, timeout, and delete option
 		private function list_temp_admins() {
 			$args = array(
-				'role'     => 'administrator',
-				'meta_key' => 'temp_admin_login_count',
+				'meta_key'   => 'support_access_token',
+				'meta_query' => array(
+					'relation' => 'AND',
+					array(
+						'key'     => 'support_access_expiration',
+						'compare' => 'EXISTS',
+					),
+				),
 			);
 
 			$user_query = new WP_User_Query( $args );
 			if ( ! empty( $user_query->results ) ) {
+				echo '<h2>' . esc_html__( 'Temporary Users', 'support-access' ) . '</h2>';
 				echo '<table class="wp-list-table widefat fixed striped users">';
 				echo '<thead>';
 				echo '<tr>';
 				echo '<th>' . esc_html__( 'Username', 'support-access' ) . '</th>';
+				echo '<th>' . esc_html__( 'Role', 'support-access' ) . '</th>';
 				echo '<th>' . esc_html__( 'Login Count', 'support-access' ) . '</th>';
 				echo '<th>' . esc_html__( 'Expiration Date', 'support-access' ) . '</th>';
 				echo '<th>' . esc_html__( 'Login Link Timeout', 'support-access' ) . '</th>';
@@ -236,21 +453,32 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 					$temp_user_url    = get_user_meta( $user->ID, 'support_access_url', true );
 					$expiration_time  = get_user_meta( $user->ID, 'support_access_expiration', true );
 					$timeout_time     = get_user_meta( $user->ID, 'support_access_timeout', true );
-					$expiration_date  = $expiration_time ? date( 'Y-m-d H:i:s', $expiration_time ) : '';
-					$timeout_date     = $timeout_time ? date( 'Y-m-d H:i:s', $expiration_time + $timeout_time ) : '';
+					$expiration_date  = $expiration_time ? gmdate( 'Y-m-d H:i:s', $expiration_time ) : '';
+					$timeout_date     = $timeout_time ? gmdate( 'Y-m-d H:i:s', $expiration_time + $timeout_time ) : '';
 
 					$limit      = get_user_meta( $user->ID, 'support_access_limit', true );
-					$login_info = ( $limit == 0 ) ? '∞' : $login_count . ' / ' . $limit;
+					$login_info = ( 0 === $limit ) ? '∞' : $login_count . ' / ' . $limit;
+
+					// Get user's role
+					$user_roles = array_map(
+						function( $role ) {
+							return translate_user_role( wp_roles()->get_names()[ $role ] );
+						},
+						$user->roles
+					);
 
 					?>
 					<tr>
 						<td><a href="<?php echo esc_url( $user_profile_url ); ?>"><?php echo esc_html( $user->user_login ); ?></a></td>
+						<td><?php echo esc_html( implode( ', ', $user_roles ) ); ?></td>
 						<td><?php echo esc_html( $login_info ); ?></td>
 						<td><?php echo esc_html( $expiration_date ); ?></td>
 						<td><?php echo esc_html( $timeout_date ); ?></td>
 						<td>
-							<input type="text" readonly value="<?php echo esc_url( $temp_user_url ); ?>" style="width:100%; padding: 10px;">
-							<button type="button" onclick="copyToClipboard('<?php echo esc_js( $temp_user_url ); ?>')" class="button"><?php esc_html_e( 'Copy URL', 'support-access' ); ?></button>
+							<input type="text" readonly value="<?php echo esc_attr( $temp_user_url ); ?>" style="width:100%; padding: 10px;">
+							<button type="button" onclick="copyToClipboard('<?php echo esc_js( $temp_user_url ); ?>')" class="button">
+								<?php esc_html_e( 'Copy URL', 'support-access' ); ?>
+							</button>
 						</td>
 						<td>
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
@@ -266,8 +494,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 				echo '</tbody>';
 				echo '</table>';
-			} else {
-				echo '<p>' . esc_html__( 'No temporary admin users found.', 'support-access' ) . '</p>';
 			}
 		}
 
