@@ -38,33 +38,22 @@ require_once 'path/to/class-support-access-manager.php';
 
 ## Usage
 
-Each plugin can create its own instance with unique settings:
-
 ```php
-// Plugin A
-$support_access_a = new Support_Access_Manager( array(
-    'menu_slug'   => 'plugin-a-support',
-    'menu_label'  => 'Plugin A Support',
-    'page_title'  => 'Plugin A Support Access',
-    'textdomain'  => 'plugin-a',
-    'defaults'    => array(
+// Get the instance with default settings
+Support_Access_Manager::get_instance();
+
+// Or get the instance with all custom settings
+Support_Access_Manager::get_instance( array(
+    'menu_label' => 'Support Users',
+	'menu_slug' => 
+    'textdomain' => 'my-plugin',
+    'defaults'   => array(
         'duration'      => 2,
         'duration_unit' => 'days',
+        'usage_limit'   => 5,
+        'timeout'       => 24,
         'role'          => 'editor',
-    ),
-) );
-
-// Plugin B
-$support_access_b = new Support_Access_Manager( array(
-    'menu_slug'   => 'plugin-b-support',
-    'menu_label'  => 'Plugin B Support',
-    'page_title'  => 'Plugin B Support Access',
-    'parent_slug' => 'tools.php',
-    'textdomain'  => 'plugin-b',
-    'defaults'    => array(
-        'duration'      => 1,
-        'duration_unit' => 'weeks',
-        'role'          => 'administrator',
+        'locale'        => 'es_ES',
     ),
 ) );
 ```
@@ -73,15 +62,11 @@ $support_access_b = new Support_Access_Manager( array(
 
 - `menu_slug` (string) - The URL slug for the admin page
   - Default: 'support-access'
-  - Example: 'plugin-support'
+  - Example: 'temp-users'
 
 - `menu_label` (string) - The text shown in the admin menu
   - Default: 'Support Access'
-  - Example: 'Plugin Support'
-
-- `page_title` (string) - The title shown at the top of the page
-  - Default: Same as menu_label
-  - Example: 'Plugin Name Support Access'
+  - Example: 'Temporary Users'
 
 - `parent_slug` (string) - Where to place the menu item
   - Default: 'users.php' (Users menu)
