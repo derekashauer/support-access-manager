@@ -81,7 +81,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				array(
 					'duration'      => 1,
 					'duration_unit' => 'weeks',
-					'timeout'       => '',
 					'usage_limit'   => '',
 					'role'          => 'administrator',
 					'locale'        => '',
@@ -235,23 +234,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 									</select>
 									<p class="description">
 										<?php esc_html_e( 'How long the temporary user account will exist before being automatically deleted.', $this->textdomain ); ?>
-									</p>
-								</td>
-							</tr>
-
-							<tr>
-								<th scope="row">
-									<label for="access_timeout"><?php esc_html_e( 'Login Link Timeout:', $this->textdomain ); ?></label>
-								</th>
-								<td>
-									<input type="number" 
-										   name="access_timeout" 
-										   id="access_timeout" 
-										   value="<?php echo esc_attr( $this->default_settings['timeout'] ); ?>" 
-										   min="1" 
-										   class="small-text">
-									<p class="description">
-										<?php esc_html_e( 'Number of hours the login link remains valid after generation. Leave empty for no timeout (link works until account expires).', $this->textdomain ); ?>
 									</p>
 								</td>
 							</tr>
@@ -447,10 +429,9 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 					$expiration_time = time() + WEEK_IN_SECONDS; // Default to 1 week.
 			}
 
-			$timeout = ! empty( $_POST['access_timeout'] ) ? absint( $_POST['access_timeout'] ) * HOUR_IN_SECONDS : 0;
-			$limit   = isset( $_POST['access_limit'] ) ? absint( $_POST['access_limit'] ) : 0;
-			$role    = sanitize_text_field( wp_unslash( $_POST['user_role'] ) );
-			$locale  = sanitize_text_field( wp_unslash( $_POST['user_locale'] ) );
+			$limit  = isset( $_POST['access_limit'] ) ? absint( $_POST['access_limit'] ) : 0;
+			$role   = sanitize_text_field( wp_unslash( $_POST['user_role'] ) );
+			$locale = sanitize_text_field( wp_unslash( $_POST['user_locale'] ) );
 
 			// Create temporary user and URL.
 			$access_user_id = $this->create_access_user( $role );
@@ -478,7 +459,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			update_user_meta( $access_user_id, 'support_access_token', $access_token ); // Store the token for verification.
 			update_user_meta( $access_user_id, 'support_access_login_count', 0 );
 			update_user_meta( $access_user_id, 'support_access_expiration', $expiration_time );
-			update_user_meta( $access_user_id, 'support_access_timeout', $timeout );
 			update_user_meta( $access_user_id, 'support_access_limit', $limit );
 
 			if ( ! empty( $locale ) ) {
@@ -561,7 +541,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 			// Get user metadata.
 			$expiration  = get_user_meta( $access_user_id, 'support_access_expiration', true );
-			$timeout     = get_user_meta( $access_user_id, 'support_access_timeout', true );
 			$limit       = get_user_meta( $access_user_id, 'support_access_limit', true );
 			$login_count = get_user_meta( $access_user_id, 'support_access_login_count', true );
 
@@ -578,14 +557,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				exit;
 			}
 
-			// Check URL timeout.
-			if ( ! empty( $timeout ) ) {
-				if ( time() > ( $decoded['time'] + $timeout ) ) {
-					wp_safe_redirect( home_url() );
-					exit;
-				}
-			}
-
 			// All checks passed, log the user in.
 			wp_set_current_user( $access_user_id );
 			wp_set_auth_cookie( $access_user_id );
@@ -598,7 +569,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 		}
 
 		/**
-		 * List temporary admins with login count, expiration date, timeout, and delete option.
+		 * List temporary admins with login count, expiration date, and delete option.
 		 */
 		private function list_access_users() {
 			$args = array(
@@ -622,7 +593,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				echo '<th>' . esc_html__( 'Role', $this->textdomain ) . '</th>';
 				echo '<th>' . esc_html__( 'Login Count', $this->textdomain ) . '</th>';
 				echo '<th>' . esc_html__( 'Expiration Date', $this->textdomain ) . '</th>';
-				echo '<th>' . esc_html__( 'Login Link Timeout', $this->textdomain ) . '</th>';
 				echo '<th>' . esc_html__( 'Access URL', $this->textdomain ) . '</th>';
 				echo '<th>' . esc_html__( 'Actions', $this->textdomain ) . '</th>';
 				echo '</tr>';
@@ -634,11 +604,8 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 					$user_profile_url = get_edit_user_link( $user->ID );
 					$access_url       = get_user_meta( $user->ID, 'support_access_url', true );
 					$expiration_time  = get_user_meta( $user->ID, 'support_access_expiration', true );
-					$timeout_time     = get_user_meta( $user->ID, 'support_access_timeout', true );
 					$expiration_date  = $expiration_time ?
 						wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $expiration_time ) : '';
-					$timeout_date     = $timeout_time ?
-						wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $expiration_time + $timeout_time ) : '';
 
 					$limit      = get_user_meta( $user->ID, 'support_access_limit', true );
 					$login_info = ( empty( $limit ) || '0' === $limit ) ? $login_count . ' / ∞' : $login_count . ' / ' . $limit;
@@ -657,7 +624,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						<td><?php echo esc_html( implode( ', ', $user_roles ) ); ?></td>
 						<td><?php echo esc_html( $login_info ); ?></td>
 						<td><?php echo esc_html( $expiration_date ); ?></td>
-						<td><?php echo esc_html( $timeout_date ); ?></td>
 						<td>
 							<?php
 							$url_preview = substr( $access_url, 0, 35 ) . '...';
