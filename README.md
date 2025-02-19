@@ -8,6 +8,8 @@ Support Access Manager is a lightweight PHP class for WordPress that allows temp
 ✅ Secure login URLs for support access  
 ✅ Cron-based cleanup of expired accounts  
 
+![Support Access Manager Screenshot](https://raw.githubusercontent.com/derekashauer/support-access-manager/main/screenshot.jpg)
+
 ## Install via Composer (Recommended)
 To include Support Access Manager in your WordPress plugin or theme, add it as a dependency:
 
