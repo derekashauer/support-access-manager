@@ -41,47 +41,6 @@ If you prefer not to use Composer, simply download `class-support-access-manager
 require_once 'path/to/class-support-access-manager.php';
 ```
 
-Initiation already happens within the class file and checks that it has not already been included by another plugin.
-
----
-
-This will:
-- Add a **Support Access** menu under **Users** in the WordPress admin.
-- Allow temporary admin users to be created.
-- Automatically delete expired temporary admins.
-- Provide a unique login URL with optional limits and timeouts.
-
----
-
-## Features
-
-✅ Create temporary admin accounts  
-✅ Set expiration times (e.g., auto-delete after 24 hours)  
-✅ Limit number of logins per account  
-✅ Secure login URLs for support access  
-✅ Cron-based cleanup of expired accounts  
-
----
-
-## License
-
-This project is licensed under the **GPL-3.0**.
-
----
-
-## Contributing
-
-If you'd like to contribute, fork the repository and submit a pull request. Issues and feature requests are welcome.
-
----
-
-## Author
-
-**Derek Ashauer**  
-[GitHub](https://github.com/derekashauer)
-
-My Plugins: [Conversion Bridge](https://conversionbridgewp.com) | [WP Sunshine](https://www.wpsunshine.com) | [Sunshine Photo Cart](https://www.sunshinephotocart.com)
-
 ### Configuration Options
 
 #### Menu Settings
@@ -225,3 +184,42 @@ Support_Access_Manager::get_instance( array(
 ```
 
 Note: Configuration options only take effect the first time the instance is created. Subsequent calls to `get_instance()` will return the existing instance with its original configuration.
+
+---
+
+This will:
+- Add a **Support Access** menu under **Users** in the WordPress admin.
+- Allow temporary admin users to be created.
+- Automatically delete expired temporary admins.
+- Provide a unique login URL with optional limits and timeouts.
+
+---
+
+## Features
+
+✅ Create temporary admin accounts  
+✅ Set expiration times (e.g., auto-delete after 24 hours)  
+✅ Limit number of logins per account  
+✅ Secure login URLs for support access  
+✅ Cron-based cleanup of expired accounts  
+
+---
+
+## License
+
+This project is licensed under the **GPL-3.0**.
+
+---
+
+## Contributing
+
+If you'd like to contribute, fork the repository and submit a pull request. Issues and feature requests are welcome.
+
+---
+
+## Author
+
+**Derek Ashauer**  
+[GitHub](https://github.com/derekashauer)
+
+My Plugins: [Conversion Bridge](https://conversionbridgewp.com) | [WP Sunshine](https://www.wpsunshine.com) | [Sunshine Photo Cart](https://www.sunshinephotocart.com)
