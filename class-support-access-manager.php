@@ -2,37 +2,34 @@
 if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 	class Support_Access_Manager {
-		private static $instance = null;
 		private $menu_slug;
 		private $menu_label;
+		private $page_title;
 		private $parent_slug;
 		private $textdomain;
 		private $default_settings;
 
 		/**
-		 * Get the singleton instance of Support_Access_Manager.
+		 * Constructor for Support Access Manager.
 		 *
-		 * @param array $args Optional. Configuration arguments for the instance.
-		 *                    Only used when creating a new instance.
-		 * @return Support_Access_Manager
+		 * @param array $args {
+		 *     Optional. Array of settings for configuring the support access manager.
+		 *
+		 *     @type string $menu_slug    Slug for the admin menu page. Default 'support-access'.
+		 *     @type string $menu_label   Label for the admin menu item. Default 'Support Access'.
+		 *     @type string $page_title   Title shown at the top of the page. Default same as menu_label.
+		 *     @type string $parent_slug  Parent menu slug. Default 'users.php'.
+		 *     @type string $textdomain   Text domain for translations. Default 'support-access'.
+		 *     @type array  $defaults     Default values for the user creation form.
+		 * }
 		 */
-		public static function get_instance( $args = array() ) {
-			if ( null === self::$instance ) {
-				self::$instance = new self( $args );
-			}
-			return self::$instance;
-		}
-
-		/**
-		 * Protected constructor to prevent creating a new instance of the
-		 * Singleton via the `new` operator from outside of this class.
-		 */
-		protected function __construct( $args = array() ) {
+		public function __construct( $args = array() ) {
 			$args = wp_parse_args(
 				$args,
 				array(
 					'menu_slug'   => 'support-access',
 					'menu_label'  => 'Support Access',
+					'page_title'  => '', // Will use menu_label if empty
 					'parent_slug' => 'users.php',
 					'textdomain'  => 'support-access',
 					'defaults'    => array(),
@@ -41,6 +38,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 			$this->menu_slug   = $args['menu_slug'];
 			$this->menu_label  = $args['menu_label'];
+			$this->page_title  = empty( $args['page_title'] ) ? $args['menu_label'] : $args['page_title'];
 			$this->parent_slug = $args['parent_slug'];
 			$this->textdomain  = $args['textdomain'];
 
@@ -77,18 +75,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 			// Handle deletion of temporary admins.
 			add_action( 'admin_post_delete_access_user', array( $this, 'handle_access_deletion' ) );
-		}
-
-		/**
-		 * Prevent cloning of the instance
-		 */
-		protected function __clone() {}
-
-		/**
-		 * Prevent unserializing of the instance
-		 */
-		public function __wakeup() {
-			throw new \Exception( 'Cannot unserialize singleton' );
 		}
 
 		/**
@@ -157,7 +143,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 		public function support_access_page() {
 			?>
 			<div class="wrap">
-				<h1><?php esc_html_e( 'Support Access', $this->textdomain ); ?></h1>
+				<h1><?php echo esc_html( $this->page_title ); ?></h1>
 				<?php
 				// Check for transient message.
 				$message = get_transient( 'support_access_message_' . get_current_user_id() );

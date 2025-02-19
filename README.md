@@ -15,17 +15,6 @@ To include Support Access Manager in your WordPress plugin or theme, add it as a
 composer require derekashauer/support-access-manager
 ```
 
-If the package is not on Packagist, add the following to your `composer.json` before requiring it:
-
-```json
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/derekashauer/support-access-manager"
-    }
-]
-```
-
 Then run:
 
 ```sh
@@ -47,17 +36,52 @@ If you prefer not to use Composer, simply download `class-support-access-manager
 require_once 'path/to/class-support-access-manager.php';
 ```
 
-## Configuration Options
+## Usage
+
+Each plugin can create its own instance with unique settings:
+
+```php
+// Plugin A
+$support_access_a = new Support_Access_Manager( array(
+    'menu_slug'   => 'plugin-a-support',
+    'menu_label'  => 'Plugin A Support',
+    'page_title'  => 'Plugin A Support Access',
+    'textdomain'  => 'plugin-a',
+    'defaults'    => array(
+        'duration'      => 2,
+        'duration_unit' => 'days',
+        'role'          => 'editor',
+    ),
+) );
+
+// Plugin B
+$support_access_b = new Support_Access_Manager( array(
+    'menu_slug'   => 'plugin-b-support',
+    'menu_label'  => 'Plugin B Support',
+    'page_title'  => 'Plugin B Support Access',
+    'parent_slug' => 'tools.php',
+    'textdomain'  => 'plugin-b',
+    'defaults'    => array(
+        'duration'      => 1,
+        'duration_unit' => 'weeks',
+        'role'          => 'administrator',
+    ),
+) );
+```
 
 ### Menu Settings
 
 - `menu_slug` (string) - The URL slug for the admin page
   - Default: 'support-access'
-  - Example: 'temp-users'
+  - Example: 'plugin-support'
 
 - `menu_label` (string) - The text shown in the admin menu
   - Default: 'Support Access'
-  - Example: 'Temporary Users'
+  - Example: 'Plugin Support'
+
+- `page_title` (string) - The title shown at the top of the page
+  - Default: Same as menu_label
+  - Example: 'Plugin Name Support Access'
 
 - `parent_slug` (string) - Where to place the menu item
   - Default: 'users.php' (Users menu)
@@ -100,27 +124,6 @@ The `defaults` array allows you to set default values for all form fields:
   - Use WordPress locale codes
 
 ### Example Configurations
-
-#### Basic Setup
-
-```php
-// Get the instance with default settings
-Support_Access_Manager::get_instance();
-
-// Or get the instance with all custom settings
-Support_Access_Manager::get_instance( array(
-    'menu_label' => 'Support Users',
-    'textdomain' => 'my-plugin',
-    'defaults'   => array(
-        'duration'      => 2,
-        'duration_unit' => 'days',
-        'usage_limit'   => 5,
-        'timeout'       => 24,
-        'role'          => 'editor',
-        'locale'        => 'es_ES',
-    ),
-) );
-```
 
 #### Set custom defaults for menu label, duration, role
 
