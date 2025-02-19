@@ -9,7 +9,7 @@
  * @copyright Copyright (c) 2024, Derek Ashauer
  * @license   MIT
  * @link      https://github.com/derekashauer/support-access-manager
- * @version   0.2.0
+ * @version   0.2.1
  *
  * @wordpress-plugin
  * Requires at least: 5.0
