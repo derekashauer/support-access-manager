@@ -57,26 +57,26 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				)
 			);
 
-			// Schedule cron job on plugin activation
-			register_activation_hook( __FILE__, array( $this, 'schedule_temp_admin_expiration_check' ) );
+			// Schedule cron job on plugin activation.
+			register_activation_hook( __FILE__, array( $this, 'schedule_access_expiration_check' ) );
 
-			// Clear the scheduled cron job on plugin deactivation
-			register_deactivation_hook( __FILE__, array( $this, 'clear_temp_admin_expiration_check' ) );
+			// Clear the scheduled cron job on plugin deactivation.
+			register_deactivation_hook( __FILE__, array( $this, 'clear_access_expiration_check' ) );
 
-			// Schedule the cron event to check for expired admins
-			add_action( 'check_temp_admin_expiration_event', array( $this, 'check_temp_admin_expiration' ) );
+			// Schedule the cron event to check for expired admins.
+			add_action( 'check_access_expiration_event', array( $this, 'check_access_expiration' ) );
 
-			// Handle temp admin login by checking the URL parameters
-			add_action( 'init', array( $this, 'check_temp_admin_login' ) );
+			// Handle temp admin login by checking the URL parameters.
+			add_action( 'init', array( $this, 'check_access_login' ) );
 
-			// Add admin menu page
+			// Add admin menu page.
 			add_action( 'admin_menu', array( $this, 'add_support_access_menu' ) );
 
-			// Handle form submission to create temp admin users
-			add_action( 'admin_init', array( $this, 'handle_temp_admin_form_submission' ) );
+			// Handle form submission to create temp admin users.
+			add_action( 'admin_init', array( $this, 'handle_access_form_submission' ) );
 
-			// Handle deletion of temporary admins
-			add_action( 'admin_post_delete_temp_admin', array( $this, 'handle_temp_admin_deletion' ) );
+			// Handle deletion of temporary admins.
+			add_action( 'admin_post_delete_access_user', array( $this, 'handle_access_deletion' ) );
 		}
 
 		/**
@@ -91,23 +91,29 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			throw new \Exception( 'Cannot unserialize singleton' );
 		}
 
-		// Schedule the cron job when the plugin is activated
-		public function schedule_temp_admin_expiration_check() {
-			if ( ! wp_next_scheduled( 'check_temp_admin_expiration_event' ) ) {
-				wp_schedule_event( time(), 'hourly', 'check_temp_admin_expiration_event' );
+		/**
+		 * Schedule the cron job when the plugin is activated.
+		 */
+		public function schedule_access_expiration_check() {
+			if ( ! wp_next_scheduled( 'check_access_expiration_event' ) ) {
+				wp_schedule_event( time(), 'hourly', 'check_access_expiration_event' );
 			}
 		}
 
-		// Clear the scheduled cron job on plugin deactivation
-		public function clear_temp_admin_expiration_check() {
-			$timestamp = wp_next_scheduled( 'check_temp_admin_expiration_event' );
+		/**
+		 * Clear the scheduled cron job on plugin deactivation.
+		 */
+		public function clear_access_expiration_check() {
+			$timestamp = wp_next_scheduled( 'check_access_expiration_event' );
 			if ( $timestamp ) {
-				wp_unschedule_event( $timestamp, 'check_temp_admin_expiration_event' );
+				wp_unschedule_event( $timestamp, 'check_access_expiration_event' );
 			}
 		}
 
-		// Hook into the scheduled event to check for expired temporary admin users
-		public function check_temp_admin_expiration() {
+		/**
+		 * Check for expired admins.
+		 */
+		public function check_access_expiration() {
 			$args = array(
 				'meta_key'   => 'support_access_token',
 				'meta_query' => array(
@@ -131,25 +137,29 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			}
 		}
 
-		// Add menu item to the specified parent menu (default: Users)
+		/**
+		 * Add a menu item to the specified parent menu (default: Users).
+		 */
 		public function add_support_access_menu() {
 			add_submenu_page(
-				$this->parent_slug,       // Parent menu slug
-				$this->menu_label,        // Page title
-				$this->menu_label,        // Menu title
-				'manage_options',         // Capability
-				$this->menu_slug,         // Menu slug
-				array( $this, 'support_access_page' ) // Callback function for the page content
+				$this->parent_slug,       // Parent menu slug.
+				$this->menu_label,        // Page title.
+				$this->menu_label,        // Menu title.
+				'manage_options',         // Capability.
+				$this->menu_slug,         // Menu slug.
+				array( $this, 'support_access_page' ) // Callback function for the page content.
 			);
 		}
 
-		// Admin page content for Support Access
+		/**
+		 * Admin page content for Support Access.
+		 */
 		public function support_access_page() {
 			?>
 			<div class="wrap">
 				<h1><?php esc_html_e( 'Support Access', $this->textdomain ); ?></h1>
 				<?php
-				// Check for transient message
+				// Check for transient message.
 				$message = get_transient( 'support_access_message_' . get_current_user_id() );
 				if ( $message ) {
 					delete_transient( 'support_access_message_' . get_current_user_id() );
@@ -162,7 +172,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				?>
 				
 				<form method="post" class="support-access-form">
-					<?php wp_nonce_field( 'create_temp_admin' ); ?>
+					<?php wp_nonce_field( 'create_access_user' ); ?>
 					<table class="form-table">
 						<tbody>
 
@@ -308,10 +318,10 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						</tbody>
 					</table>
 
-					<?php submit_button( __( 'Create Temporary User', $this->textdomain ) ); ?>
+					<?php submit_button( __( 'Create User', $this->textdomain ) ); ?>
 				</form>
 
-				<?php $this->list_temp_admins(); ?>
+				<?php $this->list_access_users(); ?>
 			</div>
 
 			<script type="text/javascript">
@@ -353,19 +363,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			</script>
 
 			<style>
-			.temp-access-url {
-				display: inline-block;
-				max-width: 250px;
-				vertical-align: middle;
-				font-family: monospace;
-				background: #f0f0f1;
-				padding: 2px 6px;
-				border-radius: 3px;
-				border: 1px solid #c3c4c7;
-			}
-			.temp-access-url:hover {
-				background: #fff;
-			}
 			.action-icon {
 				color: #50575e;
 				cursor: pointer;
@@ -386,13 +383,15 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			<?php
 		}
 
-		// Handle form submission and create the temp admin user
-		public function handle_temp_admin_form_submission() {
+		/**
+		 * Handle form submission and create the temp admin user.
+		 */
+		public function handle_access_form_submission() {
 			if ( ! isset( $_POST['access_duration'] ) || ! current_user_can( 'manage_options' ) ) {
 				return;
 			}
 
-			if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'create_temp_admin' ) ) {
+			if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'create_access_user' ) ) {
 				wp_die( 'Invalid nonce' );
 			}
 
@@ -414,7 +413,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 					$expiration_time = time() + ( $duration * MONTH_IN_SECONDS );
 					break;
 				default:
-					$expiration_time = time() + WEEK_IN_SECONDS; // Default to 1 week
+					$expiration_time = time() + WEEK_IN_SECONDS; // Default to 1 week.
 			}
 
 			$timeout = ! empty( $_POST['access_timeout'] ) ? absint( $_POST['access_timeout'] ) * HOUR_IN_SECONDS : 0;
@@ -422,55 +421,60 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			$role    = sanitize_text_field( wp_unslash( $_POST['user_role'] ) );
 			$locale  = sanitize_text_field( wp_unslash( $_POST['user_locale'] ) );
 
-			// Create temporary user and URL
-			$temp_user_id = $this->create_temp_admin_user( $role );
+			// Create temporary user and URL.
+			$access_user_id = $this->create_access_user( $role );
 
-			// Generate access token data
+			// Generate access token data.
 			$token_data = array(
-				'id'    => $temp_user_id,
+				'id'    => $access_user_id,
 				'time'  => time(),
-				'nonce' => wp_generate_password( 12, false ), // Add a nonce for extra security
+				'nonce' => wp_generate_password( 12, false ), // Add a nonce for extra security.
 			);
 
 			$data         = base64_encode( json_encode( $token_data ) );
-			$hash         = hash_hmac( 'sha256', $data, wp_salt( 'auth' ) ); // Use WordPress salt instead of hardcoded key
+			$hash         = hash_hmac( 'sha256', $data, wp_salt( 'auth' ) ); // Use WordPress salt instead of hardcoded key.
 			$access_token = $data . '.' . $hash;
 
-			$temp_user_url = add_query_arg(
+			$access_url = add_query_arg(
 				array(
 					'support_access' => $access_token,
 				),
 				home_url()
 			);
 
-			// Store user metadata
-			update_user_meta( $temp_user_id, 'support_access_url', $temp_user_url );
-			update_user_meta( $temp_user_id, 'support_access_token', $access_token ); // Store the token for verification
-			update_user_meta( $temp_user_id, 'temp_admin_login_count', 0 );
-			update_user_meta( $temp_user_id, 'support_access_expiration', $expiration_time );
-			update_user_meta( $temp_user_id, 'support_access_timeout', $timeout );
-			update_user_meta( $temp_user_id, 'support_access_limit', $limit );
+			// Store user metadata.
+			update_user_meta( $access_user_id, 'support_access_url', $access_url );
+			update_user_meta( $access_user_id, 'support_access_token', $access_token ); // Store the token for verification.
+			update_user_meta( $access_user_id, 'support_access_login_count', 0 );
+			update_user_meta( $access_user_id, 'support_access_expiration', $expiration_time );
+			update_user_meta( $access_user_id, 'support_access_timeout', $timeout );
+			update_user_meta( $access_user_id, 'support_access_limit', $limit );
 
 			if ( ! empty( $locale ) ) {
-				update_user_meta( $temp_user_id, 'locale', $locale );
+				update_user_meta( $access_user_id, 'locale', $locale );
 			}
 
-			// Store success message in transient with unique key for this user
+			// Store success message in transient with unique key for this user.
 			set_transient(
 				'support_access_message_' . get_current_user_id(),
 				array(
 					'type'    => 'success',
 					'message' => __( 'Support access user created successfully.', $this->textdomain ),
 				),
-				30 // Expire after 30 seconds
+				30 // Expire after 30 seconds.
 			);
 
 			wp_redirect( admin_url( 'users.php?page=support-access' ) );
 			exit;
 		}
 
-		// Create temporary admin user
-		private function create_temp_admin_user( $role = 'administrator' ) {
+		/**
+		 * Create a temporary admin user.
+		 *
+		 * @param string $role The role to assign to the user. Default is 'administrator'.
+		 * @return int The ID of the newly created user.
+		 */
+		private function create_access_user( $role = 'administrator' ) {
 			$username = 'support_user_' . uniqid();
 			$password = wp_generate_password();
 			$email    = $username . '@example.com';
@@ -482,15 +486,17 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			return $user_id;
 		}
 
-		// Check if the temp_admin hash matches and log in the user
-		public function check_temp_admin_login() {
+		/**
+		 * Check if the temp_admin hash matches and log in the user.
+		 */
+		public function check_access_login() {
 			if ( ! isset( $_GET['support_access'] ) ) {
 				return;
 			}
 
 			$access_token = sanitize_text_field( wp_unslash( $_GET['support_access'] ) );
 
-			// Split token into data and hash
+			// Split token into data and hash.
 			$parts = explode( '.', $access_token );
 			if ( count( $parts ) !== 2 ) {
 				wp_safe_redirect( home_url() );
@@ -499,49 +505,49 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 
 			list( $data, $received_hash ) = $parts;
 
-			// Verify hash
+			// Verify hash.
 			$expected_hash = hash_hmac( 'sha256', $data, wp_salt( 'auth' ) );
 			if ( ! hash_equals( $expected_hash, $received_hash ) ) {
 				wp_safe_redirect( home_url() );
 				exit;
 			}
 
-			// Decode the data
+			// Decode the data.
 			$decoded = json_decode( base64_decode( $data ), true );
 			if ( ! $decoded || ! isset( $decoded['id'] ) || ! isset( $decoded['time'] ) || ! isset( $decoded['nonce'] ) ) {
 				wp_safe_redirect( home_url() );
 				exit;
 			}
 
-			$temp_user_id = absint( $decoded['id'] );
+			$access_user_id = absint( $decoded['id'] );
 
-			// Verify user exists and token matches
-			$stored_token = get_user_meta( $temp_user_id, 'support_access_token', true );
+			// Verify user exists and token matches.
+			$stored_token = get_user_meta( $access_user_id, 'support_access_token', true );
 			if ( empty( $stored_token ) || $stored_token !== $access_token ) {
 				wp_safe_redirect( home_url() );
 				exit;
 			}
 
-			// Get user metadata
-			$expiration  = get_user_meta( $temp_user_id, 'support_access_expiration', true );
-			$timeout     = get_user_meta( $temp_user_id, 'support_access_timeout', true );
-			$limit       = get_user_meta( $temp_user_id, 'support_access_limit', true );
-			$login_count = get_user_meta( $temp_user_id, 'temp_admin_login_count', true );
+			// Get user metadata.
+			$expiration  = get_user_meta( $access_user_id, 'support_access_expiration', true );
+			$timeout     = get_user_meta( $access_user_id, 'support_access_timeout', true );
+			$limit       = get_user_meta( $access_user_id, 'support_access_limit', true );
+			$login_count = get_user_meta( $access_user_id, 'support_access_login_count', true );
 
 			// Check if account has expired
 			if ( time() > $expiration ) {
-				wp_delete_user( $temp_user_id );
+				wp_delete_user( $access_user_id );
 				wp_safe_redirect( home_url() );
 				exit;
 			}
 
-			// Check login count limit
+			// Check login count limit.
 			if ( $limit > 0 && $login_count >= $limit ) {
 				wp_safe_redirect( home_url() );
 				exit;
 			}
 
-			// Check URL timeout
+			// Check URL timeout.
 			if ( ! empty( $timeout ) ) {
 				if ( time() > ( $decoded['time'] + $timeout ) ) {
 					wp_safe_redirect( home_url() );
@@ -549,19 +555,21 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				}
 			}
 
-			// All checks passed, log the user in
-			wp_set_current_user( $temp_user_id );
-			wp_set_auth_cookie( $temp_user_id );
+			// All checks passed, log the user in.
+			wp_set_current_user( $access_user_id );
+			wp_set_auth_cookie( $access_user_id );
 
-			// Increment the login count
-			update_user_meta( $temp_user_id, 'temp_admin_login_count', intval( $login_count ) + 1 );
+			// Increment the login count.
+			update_user_meta( $access_user_id, 'support_access_login_count', intval( $login_count ) + 1 );
 
 			wp_safe_redirect( admin_url() );
 			exit;
 		}
 
-		// List temporary admins with login count, expiration date, timeout, and delete option
-		private function list_temp_admins() {
+		/**
+		 * List temporary admins with login count, expiration date, timeout, and delete option.
+		 */
+		private function list_access_users() {
 			$args = array(
 				'meta_key'   => 'support_access_token',
 				'meta_query' => array(
@@ -591,9 +599,9 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				echo '<tbody>';
 
 				foreach ( $user_query->results as $user ) {
-					$login_count      = get_user_meta( $user->ID, 'temp_admin_login_count', true );
+					$login_count      = get_user_meta( $user->ID, 'support_access_login_count', true );
 					$user_profile_url = get_edit_user_link( $user->ID );
-					$temp_user_url    = get_user_meta( $user->ID, 'support_access_url', true );
+					$access_url       = get_user_meta( $user->ID, 'support_access_url', true );
 					$expiration_time  = get_user_meta( $user->ID, 'support_access_expiration', true );
 					$timeout_time     = get_user_meta( $user->ID, 'support_access_timeout', true );
 					$expiration_date  = $expiration_time ?
@@ -604,7 +612,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 					$limit      = get_user_meta( $user->ID, 'support_access_limit', true );
 					$login_info = ( empty( $limit ) || '0' === $limit ) ? $login_count . ' / ∞' : $login_count . ' / ' . $limit;
 
-					// Get user's role
+					// Get user's role.
 					$user_roles = array_map(
 						function( $role ) {
 							return translate_user_role( wp_roles()->get_names()[ $role ] );
@@ -621,19 +629,19 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						<td><?php echo esc_html( $timeout_date ); ?></td>
 						<td>
 							<?php
-							$url_preview = substr( $temp_user_url, 0, 35 ) . '...';
+							$url_preview = substr( $access_url, 0, 35 ) . '...';
 							?>
-							<span class="action-icon" onclick="copyToClipboard('<?php echo esc_js( $temp_user_url ); ?>')">
+							<span class="action-icon" onclick="copyToClipboard('<?php echo esc_js( $access_url ); ?>')">
 							<span class="dashicons dashicons-clipboard" 
 								  title="<?php esc_attr_e( 'Copy URL', $this->textdomain ); ?>">
 							</span> <?php _e( 'Copy URL', $this->textdomain ); ?>
-				</span>
+							</span>
 						</td>
 						<td>
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
-								<?php wp_nonce_field( 'delete_temp_admin_' . $user->ID ); ?>
-								<input type="hidden" name="action" value="delete_temp_admin">
-								<input type="hidden" name="delete_temp_admin_id" value="<?php echo esc_attr( $user->ID ); ?>">
+								<?php wp_nonce_field( 'delete_access_user_' . $user->ID ); ?>
+								<input type="hidden" name="action" value="delete_access_user">
+								<input type="hidden" name="delete_access_user_id" value="<?php echo esc_attr( $user->ID ); ?>">
 								<button type="submit" class="action-icon delete" style="border: none; background: none; padding: 0;">
 									<span class="dashicons dashicons-trash" 
 										  title="<?php esc_attr_e( 'Delete User', $this->textdomain ); ?>">
@@ -650,13 +658,16 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			}
 		}
 
-		public function handle_temp_admin_deletion() {
-			if ( isset( $_POST['delete_temp_admin_id'] ) && current_user_can( 'manage_options' ) ) {
-				$user_id = absint( $_POST['delete_temp_admin_id'] );
-				if ( wp_verify_nonce( $_POST['_wpnonce'], 'delete_temp_admin_' . $user_id ) ) {
+		/**
+		 * Handle temporary admin deletion.
+		 */
+		public function handle_access_deletion() {
+			if ( isset( $_POST['delete_access_user_id'] ) && current_user_can( 'manage_options' ) ) {
+				$user_id = absint( $_POST['delete_access_user_id'] );
+				if ( wp_verify_nonce( $_POST['_wpnonce'], 'delete_access_user_' . $user_id ) ) {
 					wp_delete_user( $user_id );
 
-					// Store deletion message in transient
+					// Store deletion message in transient.
 					set_transient(
 						'support_access_message_' . get_current_user_id(),
 						array(
