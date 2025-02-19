@@ -79,4 +79,5 @@ If you’d like to contribute, fork the repository and submit a pull request. Is
 
 **Derek Ashauer**  
 [GitHub](https://github.com/derekashauer)
-My Plugins: [WP Sunshine](https://www.wpsunshine.com) | [Conversion Bridge](https://conversionbridgewp.com) | [Sunshine Photo Cart](https://www.sunshinephotocart.com)
+
+My Plugins: [Conversion Bridge](https://conversionbridgewp.com) | [WP Sunshine](https://www.wpsunshine.com) | [Sunshine Photo Cart](https://www.sunshinephotocart.com)
