@@ -400,7 +400,7 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 		 * Handle form submission and create the temp admin user.
 		 */
 		public function handle_access_form_submission() {
-			if ( ! isset( $_POST['access_duration'] ) || ! current_user_can( 'manage_options' ) ) {
+			if ( ! isset( $_POST['access_duration'] ) || ! current_user_can( 'create_users' ) ) {
 				return;
 			}
 
