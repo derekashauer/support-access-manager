@@ -9,5 +9,8 @@
 	},
 	"require": {
 		"php": ">=7.4"
+	},
+	"extra": {
+		"installer-name": "support-access-manager"
 	}
 }
