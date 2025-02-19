@@ -15,4 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Otherwise, load the class manually.
 if ( ! class_exists( 'Support_Access_Manager' ) ) {
 	require_once __DIR__ . '/class-support-access-manager.php';
+	// Instantiate the class
+	new Support_Access_Manager();
 }
