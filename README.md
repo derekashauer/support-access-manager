@@ -41,10 +41,10 @@ require_once 'path/to/class-support-access-manager.php';
 ### Basic Usage (Single Instance)
 ```php
 // Get the instance with default settings
-Support_Access_Manager::get_instance();
+Support_Access_Manager::instance();
 
 // Or get the instance with custom settings
-Support_Access_Manager::get_instance( array(
+Support_Access_Manager::instance( array(
     'menu_label' => 'Support Users',
     'menu_slug'  => 'support-users',
     'textdomain' => 'my-plugin',
@@ -62,7 +62,7 @@ If you need a completely separate instance with its own settings, you can extend
 ```php
 class My_Custom_Support_Access extends Support_Access_Manager {
     // Override the singleton functionality
-    public static function get_instance( $args = array() ) {
+    public static function instance( $args = array() ) {
         return new self( $args );
     }
 
@@ -73,7 +73,7 @@ class My_Custom_Support_Access extends Support_Access_Manager {
 }
 
 // Create your custom instance
-$my_support = My_Custom_Support_Access::get_instance( array(
+$my_support = My_Custom_Support_Access::instance( array(
     'menu_slug'   => 'my-custom-support',
     'menu_label'  => 'My Custom Support',
     'parent_slug' => 'tools.php',
