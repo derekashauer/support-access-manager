@@ -207,13 +207,39 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 						);
 					}
 
+					?>
+					<script>
+					function copyToClipboard(text) {
+						navigator.clipboard.writeText(text).then(function() {
+							const button = document.querySelector('.copy-button');
+							const originalText = button.innerHTML;
+							
+							// Add checkmark with fade
+							button.innerHTML = '<span class="dashicons dashicons-yes" style="color: #46b450;"></span> <?php esc_html_e( 'Copied!', $this->textdomain ); ?>';
+							button.style.transition = 'opacity 0.2s';
+							
+							// Fade back to original after delay
+							setTimeout(() => {
+								button.style.opacity = '0';
+								setTimeout(() => {
+									button.innerHTML = originalText;
+									button.style.opacity = '1';
+								}, 200);
+							}, 1500);
+						});
+					}
+					</script>
+					<?php
+
 					printf(
 						'<div class="notice notice-warning is-dismissible"><p>%s</p>%s<p><strong>%s</strong></p></div>',
 						esc_html__( 'Support user access created successfully', $this->textdomain ),
 						$access_url ? sprintf(
-							'<p><strong>%s:</strong> <code>%s</code></p>',
+							'<p><strong>%s:</strong> <code>%s</code> <button onclick="copyToClipboard(\'%s\')" class="button copy-button">%s</button></p>',
 							esc_html__( 'Access URL', $this->textdomain ),
-							esc_url( $access_url )
+							esc_url( $access_url ),
+							esc_js( $access_url ),
+							esc_html__( 'Copy URL', $this->textdomain )
 						) : '',
 						esc_html__( 'Important: Copy this URL now. For security reasons it cannot be displayed again.', $this->textdomain )
 					);
@@ -357,44 +383,6 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 				<?php $this->list_access_users(); ?>
 			</div>
 
-			<script type="text/javascript">
-				jQuery(document).ready(function($) {
-					$('#access_duration_type').on('change', function() {
-						if ($(this).val() === 'custom') {
-							$('#custom_date_wrapper').show();
-						} else {
-							$('#custom_date_wrapper').hide();
-						}
-					});
-
-					// Move copyToClipboard outside jQuery and make it global
-					window.copyToClipboard = function(url) {
-						// Use modern clipboard API if available
-						if (navigator.clipboard && window.isSecureContext) {
-							navigator.clipboard.writeText(url).then(() => {
-								alert('URL copied to clipboard!');
-							}).catch(() => {
-								// Fallback to older method if clipboard API fails
-								fallbackCopyToClipboard(url);
-							});
-						} else {
-							// Fallback for older browsers
-							fallbackCopyToClipboard(url);
-						}
-					};
-
-					function fallbackCopyToClipboard(url) {
-						const tempInput = document.createElement('input');
-						tempInput.value = url;
-						document.body.appendChild(tempInput);
-						tempInput.select();
-						document.execCommand('copy');
-						document.body.removeChild(tempInput);
-						alert('URL copied to clipboard!');
-					}
-				});
-			</script>
-
 			<style>
 			.action-icon {
 				color: #50575e;
@@ -412,6 +400,9 @@ if ( ! class_exists( 'Support_Access_Manager' ) ) {
 			.action-icon.delete:hover {
 				color: #991b1c;
 			}
+			.button.copy-button span {
+				vertical-align: middle;
+			}			
 			</style>
 			<?php
 		}
